@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { v4 as uuidv4 } from "uuid";
@@ -17,12 +17,14 @@ export default function CreateTripPage() {
         e.preventDefault();
         if (!user) return;
 
-        await addDoc(collection(db, "trips"), {
+        const tripId = uuidv4();
+
+        await setDoc(doc(db, "trips", tripId), {
             ownerId: user.uid,
             title,
             description,
             isPublic: true,
-            shareId: uuidv4(),
+            shareId: tripId, // SAME as doc ID
             locations: [],
             createdAt: serverTimestamp(),
         });
