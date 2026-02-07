@@ -1,9 +1,38 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read/write their own profile
+
+    /* =========================
+       USERS
+       ========================= */
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+    }
+
+    /* =========================
+       TRIPS
+       ========================= */
+    match /trips/{tripId} {
+
+      // ✅ Owner can read their own trips (dashboard)
+      allow read: if (request.auth != null && request.auth.uid == resource.data.ownerId)
+                  || resource.data.isPublic == true;
+
+      // ✅ Owner can create trips
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.ownerId;
+
+      // ✅ Owner can update or delete trips
+      allow update, delete: if request.auth != null
+                            && request.auth.uid == resource.data.ownerId;
+    }
+
+    /* =========================
+       DEFAULT DENY
+       ========================= */
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
