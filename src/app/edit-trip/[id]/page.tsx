@@ -6,6 +6,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import dynamic from "next/dynamic";
+import { ACTIVITY_META } from "@/lib/activityIcons";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
     ssr: false,
@@ -351,7 +352,7 @@ export default function EditTripPage() {
                                 <strong>Activities</strong>
                                 <div style={{ display: "flex", gap: "12px", marginTop: "4px", flexWrap: "wrap" }}>
                                     {["sightseeing", "hiking", "food", "meetup"].map((act) => (
-                                        <label key={act} style={{ fontSize: "0.9rem", cursor: "pointer" }}>
+                                        <label key={act} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem", cursor: "pointer" }}>
                                             <input
                                                 type="checkbox"
                                                 checked={loc.activities?.includes(act as ActivityType) || false}
@@ -362,9 +363,9 @@ export default function EditTripPage() {
                                                     copy[index].activities = Array.from(set) as ActivityType[];
                                                     setLocations(copy);
                                                 }}
-                                                style={{ marginRight: "4px" }}
                                             />
-                                            {act.charAt(0).toUpperCase() + act.slice(1)}
+                                            <span>{ACTIVITY_META[act].icon}</span>
+                                            <span>{ACTIVITY_META[act].label}</span>
                                         </label>
                                     ))}
                                 </div>

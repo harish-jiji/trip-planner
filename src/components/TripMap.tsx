@@ -13,11 +13,14 @@ type Location = {
 
 type Props = {
     locations: Location[];
-    setLocations: (locs: Location[]) => void;
+    setLocations?: (locs: Location[]) => void;
     route: [number, number][];
 };
 
-function MapClickHandler({ setLocations, locations }: { setLocations: (l: Location[]) => void, locations: Location[] }) {
+function MapClickHandler({ setLocations, locations }: { setLocations?: (l: Location[]) => void, locations: Location[] }) {
+    // Only enable click if setter is provided (Edit Mode)
+    if (!setLocations) return null;
+
     useMapEvents({
         async click(e) {
             const lat = e.latlng.lat;
