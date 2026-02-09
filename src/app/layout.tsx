@@ -1,6 +1,6 @@
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
-import { AuthProvider } from "@/context/AuthContext";
+import ClientAuthProvider from "@/components/ClientAuthProvider";
 
 export default function RootLayout({
   children,
@@ -10,7 +10,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <ClientAuthProvider>{children}</ClientAuthProvider>
       </body>
     </html>
   );
