@@ -463,6 +463,26 @@ export default function EditTripPage() {
                 >
                     Delete Trip
                 </button>
+
+                <button
+                    type="button"
+                    onClick={() => {
+                        const url = `${window.location.origin}/trip/${id}`;
+                        navigator.clipboard.writeText(url);
+                        alert("Public link copied to clipboard!\n" + url);
+                    }}
+                    style={{
+                        marginLeft: "10px",
+                        background: "#3b82f6",
+                        color: "white",
+                        padding: "10px 20px",
+                        border: "none",
+                        borderRadius: "5px",
+                        cursor: "pointer"
+                    }}
+                >
+                    🔗 Share
+                </button>
             </form>
 
             {/* Day 8: Trip Timeline View */}
