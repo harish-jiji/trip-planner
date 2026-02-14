@@ -6,49 +6,47 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { v4 as uuidv4 } from "uuid";
+import TripForm, { TripFormData } from "@/components/TripForm";
 
 export default function CreateTripPage() {
     const { user } = useAuth();
     const router = useRouter();
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
+    const [saving, setSaving] = useState(false);
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleCreate = async (data: TripFormData) => {
         if (!user) return;
+        setSaving(true);
+        try {
+            const shareId = uuidv4();
 
-        const tripId = uuidv4();
+            await setDoc(doc(db, "trips", shareId), {
+                shareId,
+                ownerId: user.uid,
+                title: data.title,
+                description: data.description,
+                mode: data.mode,
+                locations: data.locations,
+                isPublic: true,
+                createdAt: serverTimestamp(),
+            });
 
-        await setDoc(doc(db, "trips", tripId), {
-            ownerId: user.uid,
-            title,
-            description,
-            isPublic: true,
-            shareId: tripId, // SAME as doc ID
-            locations: [],
-            createdAt: serverTimestamp(),
-        });
-
-        router.push("/dashboard");
+            router.push("/dashboard");
+        } catch (error) {
+            console.error("Error creating trip:", error);
+            alert("Failed to create trip.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
-        <form onSubmit={handleCreate}>
-            <h1>Create Trip</h1>
-
-            <input
-                type="text"
-                placeholder="Trip title"
-                required
-                onChange={(e) => setTitle(e.target.value)}
+        <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
+            <h1>Create New Trip</h1>
+            <TripForm
+                isSaving={saving}
+                onSave={handleCreate}
+                submitButtonText="Create Trip"
             />
-
-            <textarea
-                placeholder="Description (optional)"
-                onChange={(e) => setDescription(e.target.value)}
-            />
-
-            <button type="submit">Create Trip</button>
-        </form>
+        </div>
     );
 }

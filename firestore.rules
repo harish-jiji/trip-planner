@@ -15,19 +15,22 @@ service cloud.firestore {
        ========================= */
     match /trips/{tripId} {
 
-      // ✅ Explicit grouping (VERY IMPORTANT)
-      allow read: if (
-        resource.data.isPublic == true
-        ||
-        (request.auth != null &&
-         request.auth.uid == resource.data.ownerId)
-      );
+      // 🔓 PUBLIC READ (Share Page - No Login Required)
+      allow read: if resource.data.isPublic == true
+                  || (request.auth != null
+                      && request.auth.uid == resource.data.ownerId);
 
+      // ➕ CREATE (Owner only)
       allow create: if request.auth != null
                     && request.auth.uid == request.resource.data.ownerId;
 
-      allow update, delete: if request.auth != null
-                            && request.auth.uid == resource.data.ownerId;
+      // ✏️ UPDATE (Owner only)
+      allow update: if request.auth != null
+                    && request.auth.uid == resource.data.ownerId;
+
+      // 🗑 DELETE (Owner only)
+      allow delete: if request.auth != null
+                    && request.auth.uid == resource.data.ownerId;
     }
 
     /* =========================

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import TripTimeline from "@/components/TripTimeline";
@@ -22,22 +22,23 @@ export default function PublicTripPage() {
 
     useEffect(() => {
         const fetchTrip = async () => {
-            const q = query(
-                collection(db, "trips"),
-                where("shareId", "==", shareId)
-            );
+            const ref = doc(db, "trips", shareId as string);
+            const snap = await getDoc(ref);
 
-            const snap = await getDocs(q);
-
-            if (!snap.empty) {
-                const data = snap.docs[0].data();
-                if (!data.isPublic) {
-                    setLoading(false);
-                    return;
-                }
-                setTrip(data);
+            if (!snap.exists()) {
+                setLoading(false);
+                return;
             }
 
+            const data = snap.data();
+
+            // Ensure public access
+            if (!data.isPublic) {
+                setLoading(false);
+                return;
+            }
+
+            setTrip(data);
             setLoading(false);
         };
 
@@ -52,7 +53,6 @@ export default function PublicTripPage() {
                 .map((l: any) => `${l.lng},${l.lat}`)
                 .join(";");
 
-            // Determine profile based on trip mode if available, default to car
             const mode = trip.mode || "car";
             let profile = "car";
             if (mode === "bicycle") profile = "bike";
