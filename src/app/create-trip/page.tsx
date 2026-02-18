@@ -7,6 +7,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import { v4 as uuidv4 } from "uuid";
 import TripForm, { TripFormData } from "@/components/TripForm";
+import Navbar from "@/components/Navbar";
+import { Container } from "@/components/ui/Container";
 
 export default function CreateTripPage() {
     const { user } = useAuth();
@@ -40,13 +42,16 @@ export default function CreateTripPage() {
     };
 
     return (
-        <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
-            <h1>Create New Trip</h1>
-            <TripForm
-                isSaving={saving}
-                onSave={handleCreate}
-                submitButtonText="Create Trip"
-            />
+        <div className="min-h-screen bg-gray-50 pb-20">
+            <Navbar />
+            <Container>
+                <h1 className="text-3xl font-bold text-gray-900 mb-8">Create New Trip</h1>
+                <TripForm
+                    isSaving={saving}
+                    onSave={handleCreate}
+                    submitButtonText="Create Trip"
+                />
+            </Container>
         </div>
     );
 }

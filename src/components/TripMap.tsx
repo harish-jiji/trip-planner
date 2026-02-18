@@ -15,35 +15,36 @@ type Props = {
     locations: Location[];
     setLocations?: (locs: Location[]) => void;
     route: [number, number][];
+    className?: string;
 };
 
 function MapClickHandler({ setLocations, locations }: { setLocations?: (l: Location[]) => void, locations: Location[] }) {
-    // Only enable click if setter is provided (Edit Mode)
     if (!setLocations) return null;
 
     useMapEvents({
         async click(e) {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
-
             const name = await reverseGeocode(lat, lng);
 
             setLocations([...locations, {
                 lat,
                 lng,
-                name, // 🔥 AUTO NAME
+                name,
             }]);
         },
     });
     return null;
 }
 
-export default function TripMap({ locations, setLocations, route }: Props) {
+export default function TripMap({ locations, setLocations, route, className = "h-[400px] w-full" }: Props) {
     return (
         <MapContainer
             center={[20.5937, 78.9629]}
             zoom={5}
-            style={{ height: "400px", width: "100%", borderRadius: "0.5rem", zIndex: 0 }}
+            // Use className for sizing, style only for zIndex if needed
+            className={`${className} z-0 rounded-lg`}
+            style={{ zIndex: 0 }}
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

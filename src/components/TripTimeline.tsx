@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-
 import { LocationStop } from "@/types/trip";
 import { calculateTripCost } from "@/lib/tripUtils";
 import { ACTIVITY_META } from "@/lib/activityIcons";
+import { Card } from "@/components/ui/Card";
 
 interface Props {
     locations: LocationStop[];
@@ -17,35 +17,27 @@ export default function TripTimeline({ locations, totalDistance, totalDuration }
     const costs = calculateTripCost(locations);
 
     return (
-        <div style={{ marginTop: "40px", padding: "20px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
-            <h2 style={{ fontSize: "1.5rem", marginBottom: "20px", color: "#111" }}>Trip Timeline</h2>
+        <div className="mt-8 space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Trip Timeline</h2>
 
             {/* Summary Header */}
             {(parseFloat(totalDistance || "0") > 0 || parseFloat(totalDuration || "0") > 0) && (
-                <div style={{
-                    display: "flex",
-                    gap: "20px",
-                    marginBottom: "30px",
-                    padding: "15px",
-                    background: "#f8fafc",
-                    borderRadius: "8px",
-                    border: "1px solid #e2e8f0"
-                }}>
+                <div className="flex flex-wrap gap-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
                     {parseFloat(totalDistance || "0") > 0 && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "1.2rem" }}>📏</span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl">📏</span>
                             <div>
-                                <div style={{ fontSize: "0.8rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Distance</div>
-                                <div style={{ fontWeight: "600", color: "#0f172a" }}>{totalDistance} km</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wide">Distance</div>
+                                <div className="font-bold text-gray-900 dark:text-gray-100">{totalDistance} km</div>
                             </div>
                         </div>
                     )}
                     {parseFloat(totalDuration || "0") > 0 && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "1.2rem" }}>⏱️</span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl">⏱️</span>
                             <div>
-                                <div style={{ fontSize: "0.8rem", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>Travel Time</div>
-                                <div style={{ fontWeight: "600", color: "#0f172a" }}>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold tracking-wide">Time</div>
+                                <div className="font-bold text-gray-900 dark:text-gray-100">
                                     {parseInt(totalDuration || "0") > 60
                                         ? `${(parseInt(totalDuration || "0") / 60).toFixed(1)} hrs`
                                         : `${totalDuration} mins`}
@@ -57,81 +49,54 @@ export default function TripTimeline({ locations, totalDistance, totalDuration }
             )}
 
             {/* Timeline */}
-            <div style={{ position: "relative", paddingLeft: "20px" }}>
+            <div className="relative pl-6 space-y-0">
+                {/* Vertical Line Background */}
+                <div className="absolute left-[29px] top-6 bottom-6 w-0.5 bg-gray-200 dark:bg-gray-700" />
+
                 {locations.map((loc, idx) => {
-                    const isLast = idx === locations.length - 1;
+                    const isOpen = openIndex === idx;
                     const hasTime = loc.time?.arrival || loc.time?.departure;
 
                     return (
-                        <div key={idx} style={{ display: "flex", gap: "20px", marginBottom: isLast ? "0" : "40px", position: "relative" }}>
-
-                            {/* Vertical Line */}
-                            {!isLast && (
-                                <div style={{
-                                    position: "absolute",
-                                    left: "14px",
-                                    top: "35px",
-                                    bottom: "-40px",
-                                    width: "2px",
-                                    background: "#e2e8f0",
-                                    zIndex: 0
-                                }} />
-                            )}
-
-                            {/* Number/Bullet */}
-                            <div style={{
-                                width: "30px",
-                                height: "30px",
-                                borderRadius: "50%",
-                                background: "#3b82f6",
-                                color: "white",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontWeight: "bold",
-                                fontSize: "0.9rem",
-                                zIndex: 1,
-                                flexShrink: 0,
-                                marginTop: "2px"
-                            }}>
+                        <div key={idx} className="relative pl-8 pb-8 last:pb-0">
+                            {/* Number Bullet */}
+                            <button
+                                onClick={() => setOpenIndex(isOpen ? null : idx)}
+                                className={`absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm z-10 border-4 border-white dark:border-black transition-colors ${isOpen
+                                        ? "bg-blue-600 text-white"
+                                        : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                                    }`}
+                            >
                                 {idx + 1}
-                            </div>
+                            </button>
 
-                            {/* Content */}
-                            <div style={{ flex: 1 }}>
-
-                                {/* Clickable Header */}
-                                <div
-                                    onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
-                                    style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px", cursor: "pointer" }}
-                                >
-                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                        <span style={{ fontSize: "0.8rem", color: "#64748b", transition: "transform 0.2s", transform: openIndex === idx ? "rotate(90deg)" : "rotate(0deg)" }}>
-                                            ▶
-                                        </span>
-                                        <h3 style={{ margin: 0, fontSize: "1.1rem", color: "#1e293b", fontWeight: "600" }}>
-                                            {loc.name || `Stop ${idx + 1}`}
-                                        </h3>
-                                    </div>
-
-                                    {/* Show brief Time summary if NOT expanded (or if you prefer always showing it in header) */}
-                                    {/* Actually, user requested collapsible expands to show details. Let's keep it clean. */}
+                            {/* Stop Card */}
+                            <div
+                                className={`
+                                    bg-white dark:bg-gray-900 rounded-xl p-4 shadow-sm border transaction-all cursor-pointer hover:shadow-md 
+                                    ${isOpen
+                                        ? "ring-2 ring-blue-50 dark:ring-blue-900/20 border-blue-100 dark:border-blue-800"
+                                        : "border-gray-100 dark:border-gray-800"
+                                    }
+                                `}
+                                onClick={() => setOpenIndex(isOpen ? null : idx)}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">
+                                        {loc.name || `Stop ${idx + 1}`}
+                                    </h3>
+                                    <span className={`text-gray-400 dark:text-gray-500 transition-transform ${isOpen ? "rotate-90" : ""}`}>
+                                        ▶
+                                    </span>
                                 </div>
 
-                                {/* Collapsible Content */}
-                                {openIndex === idx && (
-                                    <div style={{ paddingLeft: "20px", marginTop: "10px" }}>
+                                {/* Expanded Content */}
+                                {isOpen && (
+                                    <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                                         {hasTime && (
-                                            <div style={{
-                                                fontSize: "0.85rem",
-                                                color: "#64748b",
-                                                background: "#f1f5f9",
-                                                padding: "4px 8px",
-                                                borderRadius: "4px",
-                                                display: "inline-block",
-                                                marginBottom: "12px"
-                                            }}>
-                                                ⏰ {loc.time?.arrival && loc.time?.departure
+                                            <div className="inline-flex items-center gap-2 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-3 py-1 rounded-md text-sm border border-gray-100 dark:border-gray-700">
+                                                <span>⏰</span>
+                                                {loc.time?.arrival && loc.time?.departure
                                                     ? `${loc.time?.arrival} – ${loc.time?.departure}`
                                                     : loc.time?.arrival
                                                         ? `Arrives ${loc.time?.arrival}`
@@ -142,32 +107,23 @@ export default function TripTimeline({ locations, totalDistance, totalDuration }
 
                                         {/* Activities */}
                                         {loc.activities && loc.activities.length > 0 && (
-                                            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+                                            <div className="flex flex-wrap gap-2">
                                                 {loc.activities.map((act) => (
-                                                    <span key={act} style={{
-                                                        display: "inline-flex",
-                                                        alignItems: "center",
-                                                        gap: "4px",
-                                                        background: "#fff7ed",
-                                                        color: "#c2410c",
-                                                        padding: "4px 10px",
-                                                        borderRadius: "20px",
-                                                        fontSize: "0.85rem",
-                                                        border: "1px solid #ffedd5"
-                                                    }}>
-                                                        <span>{ACTIVITY_META[act]?.icon || "⭐"}</span>
-                                                        <span>{ACTIVITY_META[act]?.label || act}</span>
+                                                    <span key={act} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                                                        <span>{ACTIVITY_META[act]?.icon}</span>
+                                                        <span>{ACTIVITY_META[act]?.label}</span>
                                                     </span>
                                                 ))}
                                             </div>
                                         )}
 
-                                        {/* Individual Location Costs */}
+                                        {/* Expenses */}
                                         {loc.expenses && (
-                                            <div style={{ fontSize: "0.85rem", color: "#64748b", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                                                {loc.expenses.entry ? <span>🎟️ Entry ₹{loc.expenses.entry}</span> : null}
-                                                {loc.expenses.food ? <span>🍴 Food ₹{loc.expenses.food}</span> : null}
-                                                {loc.expenses.entry || loc.expenses.food ? null : (loc.expenses.travel || loc.expenses.other ? <span>💰 Misc expenses</span> : null)}
+                                            <div className="pt-3 border-t border-gray-50 dark:border-gray-800 grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                                {loc.expenses.entry && <span>🎟️ Entry ₹{loc.expenses.entry}</span>}
+                                                {loc.expenses.food && <span>🍴 Food ₹{loc.expenses.food}</span>}
+                                                {loc.expenses.travel && <span>🚕 Travel ₹{loc.expenses.travel}</span>}
+                                                {loc.expenses.other && <span>💸 Other ₹{loc.expenses.other}</span>}
                                             </div>
                                         )}
                                     </div>
@@ -178,46 +134,35 @@ export default function TripTimeline({ locations, totalDistance, totalDuration }
                 })}
             </div>
 
-            {/* Cost Summary Footer */}
-            <div style={{
-                marginTop: "40px",
-                borderTop: "2px dashed #e2e8f0",
-                paddingTop: "20px"
-            }}>
-                <h3 style={{ fontSize: "1.1rem", marginBottom: "15px", color: "#334155" }}>💰 Estimated Trip Cost</h3>
+            {/* Cost Summary */}
+            <Card className="mt-8 bg-gray-900 dark:bg-black text-white border-none p-6 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                <h3 className="text-lg font-medium mb-4 text-gray-300 relative z-10">Trip Expenses</h3>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "15px", marginBottom: "20px" }}>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6 relative z-10">
                     <div>
-                        <div style={{ fontSize: "0.85rem", color: "#64748b" }}>Entry Fees</div>
-                        <div style={{ fontSize: "1rem", fontWeight: "500" }}>₹{costs.entry}</div>
+                        <div className="text-xs text-gray-500 uppercase font-semibold">Entry Fees</div>
+                        <div className="text-xl font-bold">₹{costs.entry}</div>
                     </div>
                     <div>
-                        <div style={{ fontSize: "0.85rem", color: "#64748b" }}>Food & Dining</div>
-                        <div style={{ fontSize: "1rem", fontWeight: "500" }}>₹{costs.food}</div>
+                        <div className="text-xs text-gray-500 uppercase font-semibold">Food & Dining</div>
+                        <div className="text-xl font-bold">₹{costs.food}</div>
                     </div>
                     <div>
-                        <div style={{ fontSize: "0.85rem", color: "#64748b" }}>Travel</div>
-                        <div style={{ fontSize: "1rem", fontWeight: "500" }}>₹{costs.travel}</div>
+                        <div className="text-xs text-gray-500 uppercase font-semibold">Travel</div>
+                        <div className="text-xl font-bold">₹{costs.travel}</div>
                     </div>
                     <div>
-                        <div style={{ fontSize: "0.85rem", color: "#64748b" }}>Other</div>
-                        <div style={{ fontSize: "1rem", fontWeight: "500" }}>₹{costs.other}</div>
+                        <div className="text-xs text-gray-500 uppercase font-semibold">Other</div>
+                        <div className="text-xl font-bold">₹{costs.other}</div>
                     </div>
                 </div>
 
-                <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    background: "#1e293b",
-                    color: "white",
-                    padding: "15px 20px",
-                    borderRadius: "8px"
-                }}>
-                    <span style={{ fontWeight: "500" }}>Total Trip Cost</span>
-                    <span style={{ fontSize: "1.2rem", fontWeight: "bold" }}>₹{costs.total}</span>
+                <div className="flex justify-between items-center pt-6 border-t border-gray-800 relative z-10">
+                    <span className="text-gray-300 font-medium">Total Estimated Cost</span>
+                    <span className="text-3xl font-bold text-white">₹{costs.total}</span>
                 </div>
-            </div>
+            </Card>
         </div>
     );
 }

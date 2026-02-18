@@ -3,8 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { ACTIVITY_META } from "@/lib/activityIcons";
-import TripTimeline from "@/components/TripTimeline";
 import type { LocationStop, TravelMode, ActivityType } from "@/types/trip";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
     ssr: false,
@@ -180,75 +181,63 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: "20px" }}>
-                <input
-                    value={title}
-                    required
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Trip Title"
-                    style={{ width: "100%", padding: "10px", margin: "5px 0", fontSize: "1.2rem", fontWeight: "bold" }}
-                />
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:h-[calc(100vh-140px)]">
+            {/* Left Column: Form & Timeline - Scrollable */}
+            <div className="lg:overflow-y-auto pr-1 space-y-6 pb-20 lg:pb-0">
+                <Card className="space-y-4">
+                    <div>
+                        <input
+                            value={title}
+                            required
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Trip Title"
+                            className="w-full text-2xl font-bold bg-transparent border-b border-gray-200 dark:border-gray-700 pb-2 focus:outline-none focus:border-blue-600 transition-colors placeholder:text-gray-300 dark:placeholder:text-gray-600 dark:text-white"
+                        />
+                    </div>
+                    <div>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Describe your trip..."
+                            className="w-full text-gray-600 dark:text-gray-300 bg-transparent border-none resize-none focus:ring-0 p-0 placeholder:text-gray-300 dark:placeholder:text-gray-600"
+                            rows={3}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <select
+                            value={mode}
+                            onChange={(e) => setMode(e.target.value as TravelMode)}
+                            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                        >
+                            <option value="car">🚗 Car</option>
+                            <option value="motorbike">🏍️ Motorbike</option>
+                            <option value="bicycle">🚲 Bicycle</option>
+                            <option value="walk">🚶 Walk</option>
+                        </select>
 
-                <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe your trip..."
-                    style={{ width: "100%", padding: "10px", margin: "5px 0", minHeight: "80px" }}
-                />
-            </div>
+                        {parseFloat(distance) > 0 && (
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                                <span className="mr-4">📏 {distance} km</span>
+                                <span>
+                                    ⏱️ {parseInt(duration) > 60
+                                        ? `${(parseInt(duration) / 60).toFixed(1)} hrs`
+                                        : `${duration} mins`}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </Card>
 
-            <div style={{ marginBottom: "20px" }}>
-                <h3 style={{ marginBottom: "10px" }}>Trip Route</h3>
-
-                <div style={{ marginBottom: "10px", display: "flex", gap: "10px", alignItems: "center" }}>
-                    <label>Mode:</label>
-                    <select
-                        value={mode}
-                        onChange={(e) => setMode(e.target.value as TravelMode)}
-                        style={{ padding: "5px" }}
-                    >
-                        <option value="car">🚗 Car</option>
-                        <option value="motorbike">🏍️ Motorbike</option>
-                        <option value="bicycle">🚲 Bicycle</option>
-                        <option value="walk">🚶 Walk</option>
-                    </select>
-
-                    {parseFloat(distance) > 0 && (
-                        <div style={{ marginLeft: "20px", fontSize: "0.9rem", color: "#666" }}>
-                            <span>📏 {distance} km</span>
-                            <span style={{ marginLeft: "15px" }}>
-                                ⏱️ {parseInt(duration) > 60
-                                    ? `${(parseInt(duration) / 60).toFixed(1)} hrs`
-                                    : `${duration} mins`}
-                            </span>
-                        </div>
-                    )}
-                </div>
-
-                <div style={{ border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
-                    <TripMap
-                        locations={locations}
-                        setLocations={setLocations as any}
-                        route={route}
-                    />
-                </div>
-                <p style={{ marginTop: "5px", fontSize: "0.8rem", color: "#888" }}>
-                    Click on the map to add stops.
-                </p>
-
-                {/* Detailed Stop Editor */}
-                <div style={{ marginTop: "20px" }}>
-                    <h3>Stops & Activities</h3>
-
-                    {locations.length === 0 && <p style={{ color: "#888" }}>No stops added yet.</p>}
+                <div className="space-y-4">
+                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Itinerary</h3>
+                    {locations.length === 0 && <p className="text-gray-500 italic text-sm">Click on the map to add stops.</p>}
 
                     {locations.map((loc, index) => (
-                        <div
+                        <Card
                             key={index}
                             draggable
                             onDragStart={() => (dragIndex.current = index)}
-                            onDragOver={(e) => e.preventDefault()}
+                            onDragOver={(e: any) => e.preventDefault()}
                             onDrop={() => {
                                 if (dragIndex.current === null) return;
                                 const updated = [...locations];
@@ -257,56 +246,50 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
                                 dragIndex.current = null;
                                 setLocations(updated);
                             }}
-                            style={{
-                                border: "1px solid #ddd",
-                                padding: "12px",
-                                borderRadius: "6px",
-                                marginBottom: "10px",
-                                backgroundColor: "#f9f9f9",
-                                cursor: "grab",
-                            }}
+                            className="bg-white dark:bg-gray-900 cursor-grab active:cursor-grabbing group p-4"
                         >
-                            <div style={{ fontSize: "12px", color: "#999", marginBottom: "6px" }}>
-                                ⠿ Drag to reorder
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                                <h4 style={{ margin: 0 }}>
-                                    📍 Stop {index + 1}
-                                    {loc.name && (
-                                        <span style={{ fontWeight: "normal", color: "#666" }}>
-                                            {" "}– {loc.name}
-                                        </span>
-                                    )}
-                                </h4>
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex items-center gap-2 flex-1">
+                                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold px-2 py-0.5 rounded-full shrink-0">
+                                        {index + 1}
+                                    </span>
+                                    <input
+                                        placeholder="Location name"
+                                        value={loc.name || ""}
+                                        onChange={(e) => {
+                                            const copy = [...locations];
+                                            copy[index].name = e.target.value;
+                                            setLocations(copy);
+                                        }}
+                                        className="font-medium text-gray-900 dark:text-gray-100 bg-transparent border-b border-transparent focus:border-blue-500 focus:outline-none px-1 w-full"
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => setLocations(locations.filter((_, idx) => idx !== index))}
-                                    style={{ color: "red", border: "none", background: "none", cursor: "pointer", fontSize: "0.9rem" }}
+                                    className="text-gray-400 hover:text-red-500 transition-colors ml-2"
                                 >
-                                    Remove
+                                    ✕
                                 </button>
                             </div>
 
-                            <input
-                                placeholder="Location name"
-                                value={loc.name || ""}
-                                onChange={(e) => {
-                                    const copy = [...locations];
-                                    copy[index].name = e.target.value;
-                                    setLocations(copy);
-                                }}
-                                style={{ width: "100%", padding: "6px", marginBottom: "6px", fontWeight: "500", borderRadius: "4px", border: "1px solid #ccc" }}
-                            />
-
                             {/* Activities */}
-                            <div style={{ marginTop: "8px" }}>
-                                <strong>Activities</strong>
-                                <div style={{ display: "flex", gap: "12px", marginTop: "4px", flexWrap: "wrap" }}>
-                                    {["sightseeing", "hiking", "food", "meetup"].map((act) => (
-                                        <label key={act} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.9rem", cursor: "pointer" }}>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {["sightseeing", "hiking", "food", "meetup"].map((act) => {
+                                    const isActive = loc.activities?.includes(act as ActivityType);
+                                    return (
+                                        <label
+                                            key={act}
+                                            className={`text-xs px-3 py-1 rounded-full cursor-pointer transition-colors border select-none ${isActive
+                                                    ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                                                    : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                }`}
+                                        >
                                             <input
                                                 type="checkbox"
-                                                checked={loc.activities?.includes(act as ActivityType) || false}
+                                                className="hidden"
+                                                checked={isActive || false}
                                                 onChange={(e) => {
                                                     const copy = [...locations];
                                                     const set = new Set(copy[index].activities || []);
@@ -315,17 +298,17 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
                                                     setLocations(copy);
                                                 }}
                                             />
-                                            <span>{ACTIVITY_META[act].icon}</span>
-                                            <span>{ACTIVITY_META[act].label}</span>
+                                            <span className="mr-1">{ACTIVITY_META[act].icon}</span>
+                                            {ACTIVITY_META[act].label}
                                         </label>
-                                    ))}
-                                </div>
+                                    );
+                                })}
                             </div>
 
-                            {/* Time Slots */}
-                            <div style={{ marginTop: "8px", display: "flex", gap: "12px" }}>
-                                <label style={{ fontSize: "0.9rem" }}>
-                                    Arrival
+                            {/* Time & Expense Grid */}
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <label className="block text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Arrival</label>
                                     <input
                                         type="time"
                                         value={loc.time?.arrival || ""}
@@ -334,11 +317,11 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
                                             copy[index].time = { ...copy[index].time, arrival: e.target.value };
                                             setLocations(copy);
                                         }}
-                                        style={{ marginLeft: "5px", padding: "4px" }}
+                                        className="bg-gray-50 dark:bg-gray-800 rounded px-2 py-1.5 w-full border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
                                     />
-                                </label>
-                                <label style={{ fontSize: "0.9rem" }}>
-                                    Departure
+                                </div>
+                                <div>
+                                    <label className="block text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Departure</label>
                                     <input
                                         type="time"
                                         value={loc.time?.departure || ""}
@@ -347,54 +330,69 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
                                             copy[index].time = { ...copy[index].time, departure: e.target.value };
                                             setLocations(copy);
                                         }}
-                                        style={{ marginLeft: "5px", padding: "4px" }}
+                                        className="bg-gray-50 dark:bg-gray-800 rounded px-2 py-1.5 w-full border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
                                     />
-                                </label>
-                            </div>
-
-                            {/* Expenses */}
-                            <div style={{ marginTop: "8px" }}>
-                                <strong>Expenses</strong>
-                                <div style={{ display: "flex", gap: "8px", marginTop: "4px", flexWrap: "wrap" }}>
-                                    {["entry", "food", "travel", "other"].map((key) => (
-                                        <input
-                                            key={key}
-                                            type="number"
-                                            placeholder={key}
-                                            value={loc.expenses?.[key as keyof typeof loc.expenses] ?? ""}
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                const copy = [...locations];
-                                                copy[index].expenses = {
-                                                    ...(copy[index].expenses || {}),
-                                                    [key]: value === "" ? undefined : Number(value),
-                                                };
-                                                setLocations(copy);
-                                            }}
-                                            style={{ width: "90px", padding: "6px", fontSize: "0.9rem" }}
-                                        />
-                                    ))}
                                 </div>
                             </div>
-                        </div>
-                    ))}
 
-                    <h3 style={{ marginTop: "20px" }}>
-                        💰 Total Estimated Cost: ₹{totalCost}
-                    </h3>
+                            {/* Simplified Expenses */}
+                            <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-800">
+                                <details className="group/details">
+                                    <summary className="text-xs text-gray-500 cursor-pointer hover:text-blue-600 flex items-center gap-1 select-none">
+                                        💰 Expenses
+                                    </summary>
+                                    <div className="grid grid-cols-2 gap-2 mt-3">
+                                        {["entry", "food", "travel", "other"].map((key) => (
+                                            <div key={key} className="flex items-center gap-2">
+                                                <span className="text-xs text-gray-400 capitalize w-12">{key}</span>
+                                                <input
+                                                    type="number"
+                                                    placeholder="0"
+                                                    value={loc.expenses?.[key as keyof typeof loc.expenses] ?? ""}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        const copy = [...locations];
+                                                        copy[index].expenses = {
+                                                            ...(copy[index].expenses || {}),
+                                                            [key]: value === "" ? undefined : Number(value),
+                                                        };
+                                                        setLocations(copy);
+                                                    }}
+                                                    className="w-full bg-gray-50 dark:bg-gray-800 rounded px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:border-blue-400 outline-none"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </details>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+
+                <div className="sticky bottom-0 bg-gray-50 dark:bg-black/50 backdrop-blur-sm pt-4 pb-2 border-t border-gray-200 dark:border-gray-800 z-10 transition-colors">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-gray-600 dark:text-gray-400 font-medium">Total Cost</span>
+                        <span className="text-xl font-bold text-gray-900 dark:text-white">₹{totalCost}</span>
+                    </div>
+
+                    <Button
+                        type="submit"
+                        disabled={isSaving}
+                        className="w-full bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+                    >
+                        {isSaving ? "Saving..." : submitButtonText}
+                    </Button>
                 </div>
             </div>
 
-            <button
-                type="submit"
-                disabled={isSaving}
-                style={{ padding: "10px 20px", background: "black", color: "white", border: "none", borderRadius: "5px", cursor: isSaving ? "not-allowed" : "pointer", opacity: isSaving ? 0.7 : 1 }}
-            >
-                {isSaving ? "Saving..." : submitButtonText}
-            </button>
-
-            {/* Timeline View Preview */}
-            <TripTimeline locations={locations} totalDistance={distance} totalDuration={duration} />
+            {/* Right Column: Map - Sticky/Fixed */}
+            <div className="order-first lg:order-last h-[400px] lg:h-full lg:sticky lg:top-20 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 relative z-0">
+                <TripMap
+                    locations={locations}
+                    setLocations={setLocations as any}
+                    route={route}
+                />
+            </div>
         </form>
     );
 }

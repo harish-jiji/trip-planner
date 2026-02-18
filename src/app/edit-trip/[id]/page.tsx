@@ -7,6 +7,9 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import TripForm, { TripFormData } from "@/components/TripForm";
 import type { TravelMode } from "@/types/trip";
+import Navbar from "@/components/Navbar";
+import { Container } from "@/components/ui/Container";
+import { Button } from "@/components/ui/Button";
 
 export default function EditTripPage() {
     const { id } = useParams();
@@ -62,40 +65,42 @@ export default function EditTripPage() {
     };
 
     if (loading) {
-        return <div style={{ padding: "40px", textAlign: "center", color: "#666" }}>Loading trip...</div>;
+        return (
+            <div className="min-h-screen bg-gray-50 pb-20">
+                <Navbar />
+                <Container>
+                    <div className="flex items-center justify-center h-64 text-gray-500">Loading trip...</div>
+                </Container>
+            </div>
+        );
     }
 
     return (
-        <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
-            <h1>Edit Trip</h1>
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
-                <button
-                    type="button"
-                    onClick={() => {
-                        const url = `${window.location.origin}/trip/${id}`;
-                        navigator.clipboard.writeText(url);
-                        alert("Public link copied to clipboard!\n" + url);
-                    }}
-                    style={{
-                        background: "#3b82f6",
-                        color: "white",
-                        padding: "8px 16px",
-                        border: "none",
-                        borderRadius: "5px",
-                        cursor: "pointer",
-                        fontWeight: "500"
-                    }}
-                >
-                    🔗 Share Link
-                </button>
-            </div>
+        <div className="min-h-screen bg-gray-50 pb-20">
+            <Navbar />
+            <Container>
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900">Edit Trip</h1>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                            const url = `${window.location.origin}/trip/${id}`;
+                            navigator.clipboard.writeText(url);
+                            alert("Public link copied to clipboard!\n" + url);
+                        }}
+                    >
+                        🔗 Share Link
+                    </Button>
+                </div>
 
-            <TripForm
-                initialData={initialData}
-                isSaving={saving}
-                onSave={handleUpdate}
-                submitButtonText="Save Updates"
-            />
+                <TripForm
+                    initialData={initialData}
+                    isSaving={saving}
+                    onSave={handleUpdate}
+                    submitButtonText="Save Updates"
+                />
+            </Container>
         </div>
     );
 }
