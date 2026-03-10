@@ -11,7 +11,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 dark:bg-black transition-colors duration-300">
+      <body className="bg-background-light dark:bg-background-dark transition-colors duration-300 font-display">
         <ClientAuthProvider>
           <ThemeProvider>{children}</ThemeProvider>
         </ClientAuthProvider>

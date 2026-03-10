@@ -42,14 +42,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // For now, simple return to avoid flash of wrong theme is okay, 
     // but better pattern is to use suppression or a script. 
     // We'll stick to simple mounted check to avoid hydration errors.
-    if (!mounted) {
-        return <div style={{ visibility: 'hidden' }}>{children}</div>;
-    }
-
     return (
         <ThemeContext.Provider value={{ dark, setDark }}>
             <ToastProvider>
-                {children}
+                {!mounted ? (
+                    <div style={{ visibility: 'hidden' }}>{children}</div>
+                ) : (
+                    children
+                )}
             </ToastProvider>
         </ThemeContext.Provider>
     );
