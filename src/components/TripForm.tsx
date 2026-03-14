@@ -6,6 +6,7 @@ import { ACTIVITY_META } from "@/lib/activityIcons";
 import type { LocationStop, TravelMode, ActivityType } from "@/types/trip";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import MapSearch from "@/components/MapSearch";
 
 const TripMap = dynamic(() => import("@/components/TripMap"), {
     ssr: false,
@@ -386,12 +387,22 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
             </div>
 
             {/* Right Column: Map - Sticky/Fixed */}
-            <div className="order-first lg:order-last h-[400px] lg:h-full lg:sticky lg:top-20 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 relative z-0">
-                <TripMap
-                    locations={locations}
-                    setLocations={setLocations as any}
-                    route={route}
+            <div className="order-first lg:order-last flex flex-col h-[600px] lg:h-full lg:sticky lg:top-20 z-[40]">
+                <MapSearch
+                    onSelect={(place: any) => {
+                        setLocations([
+                            ...locations,
+                            { lat: place.lat, lng: place.lng, name: place.name }
+                        ]);
+                    }}
                 />
+                <div className="flex-1 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 relative z-10 w-full h-full min-h-[400px]">
+                    <TripMap
+                        locations={locations}
+                        setLocations={setLocations as any}
+                        route={route}
+                    />
+                </div>
             </div>
         </form>
     );
