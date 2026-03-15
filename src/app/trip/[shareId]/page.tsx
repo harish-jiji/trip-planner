@@ -6,11 +6,11 @@ import { doc, getDoc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import TripTimeline from "@/components/TripTimeline";
-import { Container } from "@/components/ui/Container";
 
-const TripMap = dynamic(() => import("@/components/TripMap"), {
-    ssr: false,
-});
+const TripMap = dynamic(() => import("@/components/TripMap"), { ssr: false });
+
+const ModeEmoji: Record<string, string> = { car: "🚗", bicycle: "🚲", walk: "🚶", motorbike: "🏍️" };
+const ModeLabel: Record<string, string> = { car: "Car", bicycle: "Bicycle", walk: "Walking", motorbike: "Motorbike" };
 
 export default function PublicTripPage() {
     const { shareId } = useParams();
@@ -19,144 +19,159 @@ export default function PublicTripPage() {
     const [route, setRoute] = useState<[number, number][]>([]);
     const [distance, setDistance] = useState("0");
     const [duration, setDuration] = useState("0");
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         const fetchTrip = async () => {
             if (!shareId) return;
             const ref = doc(db, "trips", shareId as string);
             const snap = await getDoc(ref);
-
-            if (!snap.exists()) {
-                setLoading(false);
-                return;
+            if (!snap.exists() || !snap.data().isPublic) { 
+                setLoading(false); 
+                return; 
             }
-
-            const data = snap.data();
-
-            // Ensure public access
-            if (!data.isPublic) {
-                setLoading(false);
-                return;
-            }
-
-            setTrip(data);
+            setTrip(snap.data());
             setLoading(false);
         };
-
         fetchTrip();
     }, [shareId]);
 
     useEffect(() => {
         if (!trip?.locations || trip.locations.length < 2) return;
-
         const fetchRoute = async () => {
-            const coords = trip.locations
-                .map((l: any) => `${l.lng},${l.lat}`)
-                .join(";");
-
+            const coords = trip.locations.map((l: any) => `${l.lng},${l.lat}`).join(";");
             const mode = trip.mode || "car";
-            let profile = "car";
-            if (mode === "bicycle") profile = "bike";
-            if (mode === "walk") profile = "foot";
-
+            const profile = mode === "bicycle" ? "bike" : mode === "walk" ? "foot" : "car";
             try {
-                const res = await fetch(
-                    `https://router.project-osrm.org/route/v1/${profile}/${coords}?overview=full&geometries=geojson`
-                );
-
+                const res = await fetch(`https://router.project-osrm.org/route/v1/${profile}/${coords}?overview=full&geometries=geojson`);
                 const data = await res.json();
-
                 if (data.routes?.length > 0) {
                     const distanceKm = (data.routes[0].distance / 1000).toFixed(2);
-
-                    const speeds: Record<string, number> = {
-                        car: 50,
-                        motorbike: 45,
-                        bicycle: 15,
-                        walk: 5,
-                    };
-                    const speed = speeds[mode as string] || 50;
-
-                    const durationMin = Math.round(
-                        (parseFloat(distanceKm) / speed) * 60
-                    );
-
+                    const speeds: Record<string, number> = { car: 50, motorbike: 45, bicycle: 15, walk: 5 };
+                    const durationMin = Math.round((parseFloat(distanceKm) / (speeds[mode] || 50)) * 60);
                     setDistance(distanceKm);
                     setDuration(durationMin.toString());
-
-                    setRoute(
-                        data.routes[0].geometry.coordinates.map(
-                            ([lng, lat]: number[]) => [lat, lng]
-                        )
-                    );
+                    setRoute(data.routes[0].geometry.coordinates.map(([lng, lat]: number[]) => [lat, lng]));
                 }
-            } catch (e) {
-                console.error("Route fetch error", e);
-            }
+            } catch {}
         };
-
         fetchRoute();
     }, [trip]);
 
+    const handleCopy = async () => {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const totalCost = (trip?.locations || []).reduce((sum: number, loc: any) => {
+        const e = loc.expenses;
+        return sum + (e ? (e.entry || 0) + (e.food || 0) + (e.travel || 0) + (e.other || 0) : 0);
+    }, 0);
+
     if (loading) return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center transition-colors">
-            <div className="animate-pulse flex flex-col items-center">
-                <div className="h-12 w-12 bg-gray-200 dark:bg-gray-800 rounded-full mb-4"></div>
-                <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
+        <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] flex items-center justify-center">
+            <div className="text-center">
+                <div className="w-12 h-12 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-[#38BDF8] rounded-full animate-spin mx-auto pb-4"></div>
+                <p className="text-gray-500 dark:text-gray-400 font-medium">Loading trip details...</p>
             </div>
         </div>
     );
 
     if (!trip) return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center transition-colors">
-            <div className="text-center p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 max-w-md">
-                <div className="text-4xl mb-4">🔒</div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Trip Not Found</h3>
-                <p className="text-gray-500 dark:text-gray-400">This trip might be private or deleted.</p>
+        <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] flex items-center justify-center px-4">
+            <div className="text-center max-w-sm w-full bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-3xl p-10 shadow-xl">
+                <div className="text-6xl mb-6">🔒</div>
+                <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Trip not found</h3>
+                <p className="text-gray-500 dark:text-gray-400 leading-relaxed">This trip might be private, deleted, or the link may be incorrect.</p>
             </div>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-black pb-20 transition-colors">
-            <Container>
-                {/* Hero Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 text-white rounded-3xl p-8 mb-8 shadow-lg transition-all hover:shadow-xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+        <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] font-sans text-gray-900 dark:text-white pb-32">
+            {/* Top Navigation Bar */}
+            <nav className="h-16 flex items-center justify-between px-4 sm:px-8 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl">
+                <div className="flex items-center gap-3 w-max">
+                    <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg pointer-events-none">✈️</div>
+                    <span className="font-extrabold text-lg text-gray-900 dark:text-white tracking-tight">Wandr</span>
+                </div>
+                <button 
+                    onClick={handleCopy}
+                    className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 font-semibold text-gray-700 dark:text-gray-300 transition-colors shadow-sm"
+                >
+                    {copied ? "✅ Copied!" : "🔗 Copy link"}
+                </button>
+            </nav>
 
-                    <h1 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight relative z-10">{trip.title}</h1>
-                    <p className="text-blue-100 text-lg md:text-xl max-w-2xl leading-relaxed opacity-90 relative z-10">
-                        {trip.description || "A planned adventure."}
-                    </p>
+            {/* Hero Section */}
+            <div className="px-4 sm:px-8 max-w-5xl mx-auto pt-10">
+                <div className="bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 dark:from-[#0F172A] dark:via-blue-950 dark:to-indigo-950 rounded-[2.5rem] p-8 sm:p-12 relative overflow-hidden shadow-2xl shadow-blue-900/20 mb-10 border border-blue-800/50 dark:border-gray-800">
+                    {/* Glowing Orbs */}
+                    <div className="absolute -top-20 -right-20 w-80 h-80 bg-blue-500/30 rounded-full blur-[80px] pointer-events-none"></div>
+                    <div className="absolute -bottom-20 -left-10 w-64 h-64 bg-purple-500/20 rounded-full blur-[60px] pointer-events-none"></div>
 
-                    <div className="flex items-center gap-4 mt-8 text-blue-100 text-sm font-medium relative z-10">
-                        <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
-                            🗓️ Trip Plan
-                        </span>
-                        {trip.mode && (
-                            <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm capitalize">
-                                🚗 {trip.mode}
+                    <div className="relative z-10 max-w-3xl">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white leading-tight mb-4 tracking-tight drop-shadow-md">
+                            {trip.title}
+                        </h1>
+                        <p className="text-lg text-blue-100/80 leading-relaxed mb-8 max-w-2xl font-medium">
+                            {trip.description || "A planned adventure."}
+                        </p>
+                        
+                        <div className="flex flex-wrap gap-2.5">
+                            <span className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 text-sm font-semibold text-white">
+                                📍 {trip.locations?.length || 0} stops
                             </span>
-                        )}
+                            {trip.mode && (
+                                <span className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 text-sm font-semibold text-white">
+                                    {ModeEmoji[trip.mode] || "🚗"} {ModeLabel[trip.mode] || trip.mode}
+                                </span>
+                            )}
+                            {distance !== "0" && (
+                                <span className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 text-sm font-semibold text-white">
+                                    📏 {distance} km
+                                </span>
+                            )}
+                            {duration !== "0" && (
+                                <span className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 text-sm font-semibold text-white">
+                                    ⏱️ ~{parseInt(duration) >= 60 ? `${Math.floor(parseInt(duration) / 60)}h ${parseInt(duration) % 60}m` : `${duration} min`}
+                                </span>
+                            )}
+                            {totalCost > 0 && (
+                                <span className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-md border border-white/10 rounded-full px-4 py-2 text-sm font-semibold text-white">
+                                    💰 ₹{totalCost.toLocaleString()}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="max-w-5xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-12 gap-10">
+                {/* Map Panel */}
+                <div className="md:col-span-12 lg:col-span-7 xl:col-span-7">
+                    <div className="bg-white dark:bg-[#1E293B] p-2 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm sticky top-24">
+                        <div className="h-[400px] md:h-[600px] w-full rounded-[1.5rem] overflow-hidden relative z-0 border border-gray-100 dark:border-gray-800">
+                            <TripMap
+                                locations={trip.locations}
+                                route={route}
+                            />
+                        </div>
                     </div>
                 </div>
 
-                {/* Map Section */}
-                <div className="mb-12 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-1">
-                    <TripMap
-                        locations={trip.locations}
-                        route={route}
-                        className="h-[400px] md:h-[500px] w-full rounded-xl z-0"
-                    />
+                {/* Timeline Panel */}
+                <div className="md:col-span-12 lg:col-span-5 xl:col-span-5">
+                    <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-8 px-2 tracking-tight">Trip Itinerary</h2>
+                    <div className="bg-white dark:bg-[#1E293B] p-6 sm:p-8 border border-gray-200 dark:border-gray-800 shadow-sm rounded-3xl">
+                        <TripTimeline
+                            locations={trip.locations}
+                        />
+                    </div>
                 </div>
-
-                {/* Timeline & Summary */}
-                <TripTimeline
-                    locations={trip.locations}
-                    totalDistance={distance}
-                    totalDuration={duration}
-                />
-            </Container>
+            </div>
         </div>
     );
 }

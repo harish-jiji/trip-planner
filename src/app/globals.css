@@ -7,3 +7,15 @@ body {
   color: var(--foreground);
   background: var(--background);
 }
+
+.activity-marker {
+  font-size: 18px;
+  background: white;
+  border-radius: 20px;
+  padding: 4px 6px;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}

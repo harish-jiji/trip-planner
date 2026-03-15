@@ -20,6 +20,14 @@ export const ACTIVITY_META: Record<
         label: "Meetup",
         icon: "👥",
     },
+    rest_stop: {
+        label: "Rest Stop",
+        icon: "☕",
+    },
+    destination: {
+        label: "Destination",
+        icon: "🏁",
+    },
     custom: {
         label: "Activity",
         icon: "⭐",

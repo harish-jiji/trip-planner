@@ -1,4 +1,4 @@
-export type ActivityType = "sightseeing" | "hiking" | "food" | "meetup" | "custom";
+export type ActivityType = "sightseeing" | "hiking" | "food" | "meetup" | "rest_stop" | "destination" | "custom";
 
 export interface LocationStop {
     lat: number;

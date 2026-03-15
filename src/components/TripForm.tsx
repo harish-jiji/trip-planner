@@ -2,15 +2,11 @@
 
 import { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
-import { ACTIVITY_META } from "@/lib/activityIcons";
-import type { LocationStop, TravelMode, ActivityType } from "@/types/trip";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import type { LocationStop, TravelMode } from "@/types/trip";
 import MapSearch from "@/components/MapSearch";
+import StopCard from "@/components/StopCard";
 
-const TripMap = dynamic(() => import("@/components/TripMap"), {
-    ssr: false,
-});
+const TripMap = dynamic(() => import("@/components/TripMap"), { ssr: false });
 
 export interface TripFormData {
     title: string;
@@ -35,10 +31,12 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
     const [route, setRoute] = useState<[number, number][]>([]);
     const [distance, setDistance] = useState("0");
     const [duration, setDuration] = useState("0");
+    const [segments, setSegments] = useState<any[]>([]);
+    const [reorderIndex, setReorderIndex] = useState<number | null>(null);
+
     const routeRequestId = useRef(0);
     const dragIndex = useRef<number | null>(null);
 
-    // If initialData loads late (e.g. fetch), update state
     useEffect(() => {
         if (initialData) {
             setTitle(initialData.title);
@@ -48,355 +46,206 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
         }
     }, [initialData]);
 
-    // --- Routing Logic ---
+    // Routing Logic
     const fetchRoute = async (locations: any[], mode: TravelMode) => {
         if (locations.length < 2) return null;
-
-        const coords = locations
-            .map((l) => `${l.lng},${l.lat}`)
-            .join(";");
-
-        let profile: "car" | "bike" | "foot";
-
+        const coords = locations.map((l) => `${l.lng},${l.lat}`).join(";");
+        let profile = "car";
         if (mode === "walk") profile = "foot";
         else if (mode === "bicycle") profile = "bike";
-        else profile = "car";
 
         try {
             const res = await fetch(
-                `https://router.project-osrm.org/route/v1/${profile}/${coords}?overview=full&geometries=geojson`
+                `https://router.project-osrm.org/route/v1/${profile}/${coords}?overview=full&steps=true&geometries=geojson`
             );
             const data = await res.json();
-
             if (!data.routes || data.routes.length === 0) return null;
 
             const distanceKm = data.routes[0].distance / 1000;
+            const SPEED_KMPH = { car: 50, motorbike: 45, bicycle: 15, walk: 5 };
+            const durationMin = Math.round((distanceKm / (SPEED_KMPH[mode] || 50)) * 60);
 
-            const SPEED_KMPH = {
-                car: 50,
-                motorbike: 45,
-                bicycle: 15,
-                walk: 5,
-            };
-
-            const durationMin = Math.round(
-                (distanceKm / SPEED_KMPH[mode]) * 60
-            );
+            const legs = data.routes[0].legs;
+            const segmentsList = legs ? legs.map((leg: any) => ({
+                distanceKm: (leg.distance / 1000).toFixed(2),
+                durationMin: Math.round(leg.duration / 60),
+            })) : [];
 
             return {
                 distanceKm: distanceKm.toFixed(2),
                 durationMin,
-                geometry: data.routes[0].geometry.coordinates.map(
-                    ([lng, lat]: number[]) => [lat, lng]
-                ),
+                segments: segmentsList,
+                geometry: data.routes[0].geometry.coordinates.map(([lng, lat]: number[]) => [lat, lng]),
             };
-        } catch (e) {
-            console.error("Routing error", e);
-            return null;
-        }
+        } catch (e) { return null; }
     };
 
     useEffect(() => {
         const loadRoute = async () => {
             if (locations.length < 2) {
-                setRoute([]);
-                setDistance("0");
-                setDuration("0");
+                setRoute([]); setDistance("0"); setDuration("0"); setSegments([]);
                 return;
             }
-
             const currentRequestId = ++routeRequestId.current;
-
             const result = await fetchRoute(locations, mode);
-            if (!result) return;
-
-            if (currentRequestId !== routeRequestId.current) return;
+            if (!result || currentRequestId !== routeRequestId.current) return;
 
             setRoute(result.geometry);
             setDistance(result.distanceKm);
             setDuration(result.durationMin.toString());
+            setSegments(result.segments || []);
         };
-
         loadRoute();
     }, [locations, mode]);
 
+    const changeStopOrder = (currentIndex: number, newIndex: number) => {
+        if (newIndex < 0 || newIndex >= locations.length) return;
+        const updated = [...locations];
+        const movedItem = updated.splice(currentIndex, 1)[0];
+        updated.splice(newIndex, 0, movedItem);
+        setLocations(updated);
+    };
 
-    // --- Cost Calculation ---
     const totalCost = locations.reduce((sum, loc) => {
         const exp = loc.expenses;
         if (!exp) return sum;
-        return (
-            sum +
-            (exp.entry || 0) +
-            (exp.food || 0) +
-            (exp.travel || 0) +
-            (exp.other || 0)
-        );
+        return sum + (exp.entry || 0) + (exp.food || 0) + (exp.travel || 0) + (exp.other || 0);
     }, 0);
 
-
-    // --- Handlers ---
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Helper to sanitize data
-        const sanitizeLocations = (locations: any[]) => {
-            return locations.map((loc) => {
-                const cleanLoc: any = {
-                    lat: loc.lat,
-                    lng: loc.lng,
-                };
-
-                if (loc.name) cleanLoc.name = loc.name;
-
-                if (loc.activities && loc.activities.length > 0) {
-                    cleanLoc.activities = loc.activities;
-                }
-
-                if (loc.time?.arrival || loc.time?.departure) {
-                    cleanLoc.time = {};
-                    if (loc.time.arrival) cleanLoc.time.arrival = loc.time.arrival;
-                    if (loc.time.departure) cleanLoc.time.departure = loc.time.departure;
-                }
-
-                if (loc.expenses) {
-                    const cleanExpenses: any = {};
-                    if (Number.isFinite(loc.expenses.entry)) cleanExpenses.entry = loc.expenses.entry;
-                    if (Number.isFinite(loc.expenses.food)) cleanExpenses.food = loc.expenses.food;
-                    if (Number.isFinite(loc.expenses.travel)) cleanExpenses.travel = loc.expenses.travel;
-                    if (Number.isFinite(loc.expenses.other)) cleanExpenses.other = loc.expenses.other;
-                    if (Object.keys(cleanExpenses).length > 0) cleanLoc.expenses = cleanExpenses;
-                }
-                return cleanLoc;
-            });
-        };
-
-        const cleanedLocations = sanitizeLocations(locations);
-
-        await onSave({
-            title,
-            description,
-            locations: cleanedLocations,
-            mode
+        const cleanedLocations = locations.map(loc => {
+            const cleanLoc: any = { lat: loc.lat, lng: loc.lng };
+            if (loc.name) cleanLoc.name = loc.name;
+            if (loc.activities?.length) cleanLoc.activities = loc.activities;
+            if (loc.time?.arrival || loc.time?.departure) cleanLoc.time = loc.time;
+            
+            if (loc.expenses) {
+                const cleanExpenses: any = {};
+                ["entry", "food", "travel", "other"].forEach(k => {
+                    const val = loc.expenses![k as keyof typeof loc.expenses];
+                    if (Number.isFinite(val)) cleanExpenses[k] = val;
+                });
+                if (Object.keys(cleanExpenses).length > 0) cleanLoc.expenses = cleanExpenses;
+            }
+            return cleanLoc;
         });
+
+        await onSave({ title, description, locations: cleanedLocations, mode });
     };
 
     return (
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:h-[calc(100vh-140px)]">
-            {/* Left Column: Form & Timeline - Scrollable */}
-            <div className="lg:overflow-y-auto pr-1 space-y-6 pb-20 lg:pb-0">
-                <Card className="space-y-4">
-                    <div>
+        <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row h-full min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
+            {/* Left Column (Planner / Stops) */}
+            <div className="w-full lg:w-[480px] xl:w-[560px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-[#0F172A] border-r border-gray-100 dark:border-gray-800 lg:h-screen lg:overflow-y-auto">
+                <div className="p-6 md:p-8 flex flex-col gap-6">
+                    {/* Header Info */}
+                    <div className="bg-white dark:bg-[#1E293B] p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 space-y-5 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                         <input
                             value={title}
                             required
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Trip Title"
-                            className="w-full text-2xl font-bold bg-transparent border-b border-gray-200 dark:border-gray-700 pb-2 focus:outline-none focus:border-blue-600 transition-colors placeholder:text-gray-300 dark:placeholder:text-gray-600 dark:text-white"
+                            placeholder="Name your trip..."
+                            className="w-full text-3xl font-black bg-transparent border-none p-0 focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-900 dark:text-white relative z-10"
                         />
-                    </div>
-                    <div>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Describe your trip..."
-                            className="w-full text-gray-600 dark:text-gray-300 bg-transparent border-none resize-none focus:ring-0 p-0 placeholder:text-gray-300 dark:placeholder:text-gray-600"
-                            rows={3}
+                            placeholder="Add a short description about your travel..."
+                            className="w-full text-base text-gray-500 dark:text-gray-400 bg-transparent border-none resize-none focus:ring-0 p-0 placeholder:text-gray-300 dark:placeholder:text-gray-700 min-h-[60px] relative z-10"
                         />
-                    </div>
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
-                        <select
-                            value={mode}
-                            onChange={(e) => setMode(e.target.value as TravelMode)}
-                            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
-                        >
-                            <option value="car">🚗 Car</option>
-                            <option value="motorbike">🏍️ Motorbike</option>
-                            <option value="bicycle">🚲 Bicycle</option>
-                            <option value="walk">🚶 Walk</option>
-                        </select>
+                        <div className="flex items-center justify-between pt-5 border-t border-gray-100 dark:border-gray-800 relative z-10">
+                            <select
+                                value={mode}
+                                onChange={(e) => setMode(e.target.value as TravelMode)}
+                                className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-[#38BDF8] font-semibold border-none rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer transition-colors"
+                            >
+                                <option value="car">🚗 Car</option>
+                                <option value="motorbike">🏍️ Motorbike</option>
+                                <option value="bicycle">🚲 Bicycle</option>
+                                <option value="walk">🚶 Walk</option>
+                            </select>
 
-                        {parseFloat(distance) > 0 && (
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                                <span className="mr-4">📏 {distance} km</span>
-                                <span>
-                                    ⏱️ {parseInt(duration) > 60
-                                        ? `${(parseInt(duration) / 60).toFixed(1)} hrs`
-                                        : `${duration} mins`}
-                                </span>
+                            {parseFloat(distance) > 0 && (
+                                <div className="flex items-center gap-4 text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#0F172A] px-4 py-2 rounded-xl shadow-inner border border-gray-100 dark:border-gray-800">
+                                    <span className="flex items-center gap-1.5"><span>📏</span> {distance}k</span>
+                                    <span className="w-px h-4 bg-gray-300 dark:bg-gray-700"></span>
+                                    <span className="flex items-center gap-1.5"><span>⏱️</span> {parseInt(duration) > 60 ? `${(parseInt(duration) / 60).toFixed(1)}h` : `${duration}m`}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Stops List */}
+                    <div className="flex flex-col gap-5 pt-2 relative pb-40 lg:pb-32">
+                        <div className="flex items-center justify-between px-2">
+                            <h3 className="font-extrabold text-xl tracking-tight text-gray-900 dark:text-white">Trip Route</h3>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{locations.length} STOPS</span>
+                        </div>
+
+                        {locations.length === 0 && (
+                            <div className="py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl text-center flex flex-col items-center">
+                                <div className="text-4xl mb-3 opacity-50">📍</div>
+                                <p className="text-gray-500 dark:text-gray-400 font-medium">Search the map to add stops.</p>
                             </div>
                         )}
-                    </div>
-                </Card>
 
-                <div className="space-y-4">
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Itinerary</h3>
-                    {locations.length === 0 && <p className="text-gray-500 italic text-sm">Click on the map to add stops.</p>}
+                        {locations.map((loc, index) => (
+                            <div key={index} className="flex flex-col gap-3 relative">
+                                <StopCard 
+                                    loc={loc} 
+                                    index={index} 
+                                    dragIndex={dragIndex} 
+                                    locations={locations} 
+                                    setLocations={setLocations} 
+                                    setReorderIndex={setReorderIndex} 
+                                />
 
-                    {locations.map((loc, index) => (
-                        <Card
-                            key={index}
-                            draggable
-                            onDragStart={() => (dragIndex.current = index)}
-                            onDragOver={(e: any) => e.preventDefault()}
-                            onDrop={() => {
-                                if (dragIndex.current === null) return;
-                                const updated = [...locations];
-                                const draggedItem = updated.splice(dragIndex.current, 1)[0];
-                                updated.splice(index, 0, draggedItem);
-                                dragIndex.current = null;
-                                setLocations(updated);
-                            }}
-                            className="bg-white dark:bg-gray-900 cursor-grab active:cursor-grabbing group p-4"
-                        >
-                            <div className="flex justify-between items-start mb-3">
-                                <div className="flex items-center gap-2 flex-1">
-                                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold px-2 py-0.5 rounded-full shrink-0">
-                                        {index + 1}
-                                    </span>
-                                    <input
-                                        placeholder="Location name"
-                                        value={loc.name || ""}
-                                        onChange={(e) => {
-                                            const copy = [...locations];
-                                            copy[index].name = e.target.value;
-                                            setLocations(copy);
-                                        }}
-                                        className="font-medium text-gray-900 dark:text-gray-100 bg-transparent border-b border-transparent focus:border-blue-500 focus:outline-none px-1 w-full"
-                                        onClick={(e) => e.stopPropagation()}
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setLocations(locations.filter((_, idx) => idx !== index))}
-                                    className="text-gray-400 hover:text-red-500 transition-colors ml-2"
-                                >
-                                    ✕
-                                </button>
-                            </div>
-
-                            {/* Activities */}
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {["sightseeing", "hiking", "food", "meetup"].map((act) => {
-                                    const isActive = loc.activities?.includes(act as ActivityType);
-                                    return (
-                                        <label
-                                            key={act}
-                                            className={`text-xs px-3 py-1 rounded-full cursor-pointer transition-colors border select-none ${isActive
-                                                    ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                                                    : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                }`}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                className="hidden"
-                                                checked={isActive || false}
-                                                onChange={(e) => {
-                                                    const copy = [...locations];
-                                                    const set = new Set(copy[index].activities || []);
-                                                    e.target.checked ? set.add(act as ActivityType) : set.delete(act as ActivityType);
-                                                    copy[index].activities = Array.from(set) as ActivityType[];
-                                                    setLocations(copy);
-                                                }}
-                                            />
-                                            <span className="mr-1">{ACTIVITY_META[act].icon}</span>
-                                            {ACTIVITY_META[act].label}
-                                        </label>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Time & Expense Grid */}
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <label className="block text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Arrival</label>
-                                    <input
-                                        type="time"
-                                        value={loc.time?.arrival || ""}
-                                        onChange={(e) => {
-                                            const copy = [...locations];
-                                            copy[index].time = { ...copy[index].time, arrival: e.target.value };
-                                            setLocations(copy);
-                                        }}
-                                        className="bg-gray-50 dark:bg-gray-800 rounded px-2 py-1.5 w-full border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-1">Departure</label>
-                                    <input
-                                        type="time"
-                                        value={loc.time?.departure || ""}
-                                        onChange={(e) => {
-                                            const copy = [...locations];
-                                            copy[index].time = { ...copy[index].time, departure: e.target.value };
-                                            setLocations(copy);
-                                        }}
-                                        className="bg-gray-50 dark:bg-gray-800 rounded px-2 py-1.5 w-full border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Simplified Expenses */}
-                            <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-800">
-                                <details className="group/details">
-                                    <summary className="text-xs text-gray-500 cursor-pointer hover:text-blue-600 flex items-center gap-1 select-none">
-                                        💰 Expenses
-                                    </summary>
-                                    <div className="grid grid-cols-2 gap-2 mt-3">
-                                        {["entry", "food", "travel", "other"].map((key) => (
-                                            <div key={key} className="flex items-center gap-2">
-                                                <span className="text-xs text-gray-400 capitalize w-12">{key}</span>
-                                                <input
-                                                    type="number"
-                                                    placeholder="0"
-                                                    value={loc.expenses?.[key as keyof typeof loc.expenses] ?? ""}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value;
-                                                        const copy = [...locations];
-                                                        copy[index].expenses = {
-                                                            ...(copy[index].expenses || {}),
-                                                            [key]: value === "" ? undefined : Number(value),
-                                                        };
-                                                        setLocations(copy);
-                                                    }}
-                                                    className="w-full bg-gray-50 dark:bg-gray-800 rounded px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 focus:border-blue-400 outline-none"
-                                                />
-                                            </div>
-                                        ))}
+                                {segments[index] && (
+                                    <div className="flex justify-center -my-1 z-10 relative">
+                                        <div className="bg-white dark:bg-[#1E293B] shadow-sm border border-gray-100 dark:border-gray-800 px-4 py-2 rounded-full text-xs font-bold text-gray-500 flex items-center gap-3">
+                                            <span className="flex items-center gap-1 text-blue-600 dark:text-[#38BDF8]"><span>📏</span> {segments[index].distanceKm}km</span>
+                                            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
+                                            <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400"><span>⏱️</span> {segments[index].durationMin}m</span>
+                                        </div>
                                     </div>
-                                </details>
+                                )}
                             </div>
-                        </Card>
-                    ))}
+                        ))}
+                    </div>
                 </div>
 
-                <div className="sticky bottom-0 bg-gray-50 dark:bg-black/50 backdrop-blur-sm pt-4 pb-2 border-t border-gray-200 dark:border-gray-800 z-10 transition-colors">
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-gray-600 dark:text-gray-400 font-medium">Total Cost</span>
-                        <span className="text-xl font-bold text-gray-900 dark:text-white">₹{totalCost}</span>
+                {/* Bottom Action Bar (Fixed at bottom of left column on desktop, fixed bottom screen on mobile) */}
+                <div className="fixed lg:sticky bottom-0 left-0 right-0 lg:left-auto lg:right-auto w-full lg:w-auto p-4 md:p-6 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 z-40 lg:mt-auto flex flex-col gap-3">
+                    <div className="flex justify-between items-center px-2">
+                        <span className="text-gray-500 dark:text-gray-400 font-bold text-sm tracking-wide uppercase">Est. Trip Cost</span>
+                        <span className="text-2xl font-black text-gray-900 dark:text-white">₹{totalCost.toLocaleString()}</span>
                     </div>
-
-                    <Button
+                    <button
                         type="submit"
                         disabled={isSaving}
-                        className="w-full bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/25 transition-all outline-none focus:ring-4 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
                     >
-                        {isSaving ? "Saving..." : submitButtonText}
-                    </Button>
+                        {isSaving ? "Saving Trip..." : submitButtonText}
+                    </button>
                 </div>
             </div>
 
-            {/* Right Column: Map - Sticky/Fixed */}
-            <div className="order-first lg:order-last flex flex-col h-[600px] lg:h-full lg:sticky lg:top-20 z-[40]">
-                <MapSearch
-                    onSelect={(place: any) => {
-                        setLocations([
-                            ...locations,
-                            { lat: place.lat, lng: place.lng, name: place.name }
-                        ]);
-                    }}
-                />
-                <div className="flex-1 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 relative z-10 w-full h-full min-h-[400px]">
+            {/* Right Column (Map) */}
+            <div className="flex-1 h-[60vh] lg:h-screen sticky top-0 md:top-[73px] lg:top-0 z-0 bg-gray-100 dark:bg-gray-900 flex flex-col order-first lg:order-last border-b lg:border-b-0 border-gray-200 dark:border-gray-800 overflow-hidden">
+                <div className="absolute top-4 left-4 right-4 z-10 shadow-xl rounded-2xl overflow-hidden pointer-events-auto">
+                    <MapSearch
+                        onSelect={(place: any) => {
+                            setLocations([
+                                ...locations,
+                                { lat: place.lat, lng: place.lng, name: place.name }
+                            ]);
+                        }}
+                    />
+                </div>
+                
+                <div className="w-full h-full relative z-0">
                     <TripMap
                         locations={locations}
                         setLocations={setLocations as any}
@@ -404,6 +253,40 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
                     />
                 </div>
             </div>
+
+            {/* Reorder Modal Overlay */}
+            {reorderIndex !== null && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-[#1E293B] rounded-3xl max-w-sm w-full p-8 shadow-2xl relative border border-gray-100 dark:border-gray-800">
+                        <button 
+                            type="button" 
+                            onClick={() => setReorderIndex(null)}
+                            className="absolute top-6 right-6 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500 font-bold transition-colors"
+                        >✕</button>
+                        <h3 className="text-2xl font-black text-gray-900 dark:text-white mb-6">Move {locations[reorderIndex]?.name} briefly...</h3>
+                        
+                        <div className="grid grid-cols-4 gap-3">
+                            {locations.map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                        changeStopOrder(reorderIndex, idx);
+                                        setReorderIndex(null);
+                                    }}
+                                    className={`py-4 rounded-2xl font-black text-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        reorderIndex === idx 
+                                            ? "bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-105" 
+                                            : "bg-gray-50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border-2 border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                                    }`}
+                                >
+                                    {idx + 1}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </form>
     );
 }

@@ -7,9 +7,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import TripForm, { TripFormData } from "@/components/TripForm";
 import type { TravelMode } from "@/types/trip";
-import Navbar from "@/components/Navbar";
-import { Container } from "@/components/ui/Container";
-import { Button } from "@/components/ui/Button";
+import PlannerLayout from "@/components/PlannerLayout";
 
 export default function EditTripPage() {
     const { id } = useParams();
@@ -40,9 +38,7 @@ export default function EditTripPage() {
             setLoading(false);
         };
 
-        if (user) {
-            fetchTrip();
-        }
+        if (user) fetchTrip();
     }, [id, user, router]);
 
     const handleUpdate = async (data: TripFormData) => {
@@ -66,41 +62,36 @@ export default function EditTripPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 pb-20">
-                <Navbar />
-                <Container>
-                    <div className="flex items-center justify-center h-64 text-gray-500">Loading trip...</div>
-                </Container>
-            </div>
+            <PlannerLayout>
+                <div className="flex items-center justify-center h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
+                    <div className="w-12 h-12 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-[#38BDF8] rounded-full animate-spin"></div>
+                </div>
+            </PlannerLayout>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
-            <Navbar />
-            <Container>
-                <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Edit Trip</h1>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                            const url = `${window.location.origin}/trip/${id}`;
-                            navigator.clipboard.writeText(url);
-                            alert("Public link copied to clipboard!\n" + url);
-                        }}
-                    >
-                        🔗 Share Link
-                    </Button>
-                </div>
-
+        <PlannerLayout>
+            <div className="h-full relative">
                 <TripForm
                     initialData={initialData}
                     isSaving={saving}
                     onSave={handleUpdate}
-                    submitButtonText="Save Updates"
+                    submitButtonText="💾 Save Changes"
                 />
-            </Container>
-        </div>
+                
+                <button
+                    type="button"
+                    onClick={() => {
+                        const url = `${window.location.origin}/trip/${id}`;
+                        navigator.clipboard.writeText(url);
+                        alert("Public link copied to clipboard!\n" + url);
+                    }}
+                    className="absolute top-4 right-4 z-50 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 shadow-lg px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                    🔗 Share Trip Link
+                </button>
+            </div>
+        </PlannerLayout>
     );
 }

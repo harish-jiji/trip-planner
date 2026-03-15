@@ -4,11 +4,14 @@ import { MapContainer, TileLayer, Marker, Polyline, useMapEvents, Popup } from "
 import { useEffect, useState } from "react";
 import L from "leaflet";
 import { reverseGeocode } from "@/lib/reverseGeocode";
+import { createActivityIcon } from "@/lib/activityMarker";
+import { ActivityType } from "@/types/trip";
 
 type Location = {
     lat: number;
     lng: number;
     name?: string; // Add name support to component types
+    activities?: ActivityType[];
 };
 
 type Props = {
@@ -54,7 +57,7 @@ export default function TripMap({ locations, setLocations, route, className = "h
             <MapClickHandler setLocations={setLocations} locations={locations} />
 
             {locations.map((loc, idx) => (
-                <Marker key={idx} position={[loc.lat, loc.lng]}>
+                <Marker key={idx} position={[loc.lat, loc.lng]} icon={createActivityIcon(loc.activities)}>
                     <Popup>
                         <strong>{loc.name || "Unnamed stop"}</strong>
                     </Popup>
