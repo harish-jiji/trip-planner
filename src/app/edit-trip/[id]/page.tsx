@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc, arrayUnion } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import TripForm, { TripFormData } from "@/components/TripForm";
@@ -17,6 +17,32 @@ export default function EditTripPage() {
     const [initialData, setInitialData] = useState<TripFormData | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    
+    // Sharing State
+    const [tripShareId, setTripShareId] = useState("");
+    const [shareModal, setShareModal] = useState(false);
+    const [friends, setFriends] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (!user) return;
+        const loadFriends = async () => {
+            try {
+                const q = query(
+                    collection(db, "friends"),
+                    where("userA", "==", user.uid)
+                );
+                const snap = await getDocs(q);
+                const list: any[] = [];
+                snap.forEach(doc => {
+                    list.push({ id: doc.id, ...doc.data() });
+                });
+                setFriends(list);
+            } catch (error) {
+                console.error("Failed to load friends", error);
+            }
+        };
+        loadFriends();
+    }, [user]);
 
     useEffect(() => {
         const fetchTrip = async () => {
@@ -29,6 +55,7 @@ export default function EditTripPage() {
                 return;
             }
 
+            setTripShareId(snap.data().shareId || id);
             setInitialData({
                 title: snap.data().title,
                 description: snap.data().description || "",
@@ -60,6 +87,30 @@ export default function EditTripPage() {
         }
     };
 
+    const shareTripWithFriend = async (friend: any) => {
+        if (!user) return;
+        try {
+            const friendId = friend.userB || friend.uid;
+
+            await addDoc(collection(db, "receivedTrips"), {
+                tripId: id,
+                fromUserId: user.uid,
+                toUserId: friendId,
+                createdAt: new Date()
+            });
+
+            await updateDoc(doc(db, "trips", id as string), {
+                sharedWithFriends: arrayUnion(friendId)
+            });
+
+            alert("Trip successfully shared with friend!");
+            setShareModal(false);
+        } catch (error) {
+            console.error("Error sharing trip with friend:", error);
+            alert("Failed to share trip.");
+        }
+    };
+
     if (loading) {
         return (
             <PlannerLayout>
@@ -79,18 +130,64 @@ export default function EditTripPage() {
                     onSave={handleUpdate}
                     submitButtonText="💾 Save Changes"
                 />
-                
-                <button
-                    type="button"
-                    onClick={() => {
-                        const url = `${window.location.origin}/trip/${id}`;
-                        navigator.clipboard.writeText(url);
-                        alert("Public link copied to clipboard!\n" + url);
-                    }}
-                    className="absolute top-4 right-4 z-50 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 shadow-lg px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                    🔗 Share Trip Link
-                </button>
+                <div className="absolute top-4 right-4 z-40 flex flex-wrap gap-2 justify-end">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const url = `${window.location.origin}/trip/${tripShareId}`;
+                            navigator.clipboard.writeText(url);
+                            alert("Public link copied to clipboard!\n" + url);
+                        }}
+                        className="bg-blue-600 dark:bg-blue-600 border border-blue-500 hover:bg-blue-700 text-white shadow-lg px-4 py-2 rounded-xl text-sm font-bold transition-colors"
+                    >
+                        🔗 Copy Link
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setShareModal(true)}
+                        className="bg-purple-600 dark:bg-purple-600 border border-purple-500 hover:bg-purple-700 text-white shadow-lg px-4 py-2 rounded-xl text-sm font-bold transition-colors"
+                    >
+                        👥 Share With Friend
+                    </button>
+                </div>
+
+                {shareModal && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-3xl p-6 w-full max-w-md shadow-2xl">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Share With Friend</h3>
+                                <button onClick={() => setShareModal(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white text-xl">✕</button>
+                            </div>
+                            
+                            {friends.length === 0 ? (
+                                <p className="text-center text-gray-500 dark:text-gray-400 py-4">You have no friends on your list yet.</p>
+                            ) : (
+                                <div className="space-y-3 max-h-60 overflow-y-auto">
+                                    {friends.map(friend => (
+                                        <div key={friend.id} className="flex justify-between items-center p-4 border border-gray-100 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-gray-800/50">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
+                                                    F
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-gray-900 dark:text-white text-sm">Friend ID</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-mono truncate max-w-[120px]">{friend.userB || friend.uid}</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => shareTripWithFriend(friend)}
+                                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-green-500/20 transition-all shrink-0"
+                                            >
+                                                Share
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </PlannerLayout>
     );

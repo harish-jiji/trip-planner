@@ -74,6 +74,11 @@ export default function TripCard({
                             {trip.mode}
                         </span>
                     )}
+                    {trip.sharedWithFriends && trip.sharedWithFriends.length > 0 && (
+                        <span className="bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-3 py-1.5 rounded-full text-xs font-semibold border border-purple-100 dark:border-purple-800/30 flex items-center gap-1">
+                            👥 Shared with {trip.sharedWithFriends.length} friend{trip.sharedWithFriends.length !== 1 ? "s" : ""}
+                        </span>
+                    )}
                 </div>
 
                 <Link href={`/edit-trip/${trip.id}`} className="mt-auto block">

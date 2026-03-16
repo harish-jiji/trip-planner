@@ -6,32 +6,103 @@ service cloud.firestore {
        USERS
        ========================= */
     match /users/{userId} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == userId;
+
+      // Logged-in users can read profiles (for friend search)
+      allow read: if request.auth != null;
+
+      // Create own profile
+      allow create: if request.auth != null
+                    && request.auth.uid == userId;
+
+      // Update or delete own profile
+      allow update, delete: if request.auth != null
+                            && request.auth.uid == userId;
     }
+
 
     /* =========================
        TRIPS
        ========================= */
     match /trips/{tripId} {
 
-      // 🔓 PUBLIC READ (Share Page - No Login Required)
+      // Public share page
       allow read: if resource.data.isPublic == true
-                  || (request.auth != null
-                      && request.auth.uid == resource.data.ownerId);
+      || (request.auth != null
+          && request.auth.uid == resource.data.ownerId)
+      || (request.auth != null
+          && request.auth.uid in resource.data.sharedWithFriends);
 
-      // ➕ CREATE (Owner only)
+      // Create trip
       allow create: if request.auth != null
                     && request.auth.uid == request.resource.data.ownerId;
 
-      // ✏️ UPDATE (Owner only)
-      allow update: if request.auth != null
-                    && request.auth.uid == resource.data.ownerId;
-
-      // 🗑 DELETE (Owner only)
-      allow delete: if request.auth != null
-                    && request.auth.uid == resource.data.ownerId;
+      // Update or delete only by owner
+      allow update, delete: if request.auth != null
+                            && request.auth.uid == resource.data.ownerId;
     }
+
+
+    /* =========================
+       FRIEND REQUESTS
+       ========================= */
+    match /friendRequests/{requestId} {
+
+      // Allow query reads for logged-in users
+      allow read: if request.auth != null;
+
+      // Sender creates request
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.fromUserId;
+
+      // Receiver updates request
+      allow update: if request.auth != null
+                    && request.auth.uid == resource.data.toUserId;
+
+      // Sender or receiver can delete
+      allow delete: if request.auth != null
+                    && (
+                        request.auth.uid == resource.data.fromUserId
+                        || request.auth.uid == resource.data.toUserId
+                       );
+    }
+
+
+    /* =========================
+       FRIENDS LIST
+       ========================= */
+    match /friends/{friendId} {
+
+      // Allow queries
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null;
+
+      allow delete: if request.auth != null
+                    && (
+                        request.auth.uid == resource.data.userA
+                        || request.auth.uid == resource.data.userB
+                       );
+    }
+
+
+    /* =========================
+       RECEIVED TRIPS
+       ========================= */
+    match /receivedTrips/{docId} {
+
+      // Allow queries
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.fromUserId;
+
+      allow delete: if request.auth != null
+                    && (
+                        request.auth.uid == resource.data.fromUserId
+                        || request.auth.uid == resource.data.toUserId
+                       );
+    }
+
 
     /* =========================
        DEFAULT DENY
@@ -39,5 +110,6 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if false;
     }
+
   }
 }

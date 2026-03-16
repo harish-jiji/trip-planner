@@ -1,21 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { auth } from "@/lib/firebaseAuth";
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
     const { user } = useAuth();
     
     const handleLogout = async () => {
-        await auth.signOut();
+        try {
+            await auth.signOut();
+            router.replace("/");
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
     };
 
     const links = [
         { href: "/dashboard", label: "Dashboard", icon: "📊" },
-        { href: "/create-trip", label: "New Trip", icon: "➕" },
+        { href: "/create-trip", label: "Create Trip", icon: "➕" },
+        { href: "/my-trips", label: "My Trips", icon: "🗺️" },
+        { href: "/received-trips", label: "Received Trips", icon: "📥" },
+        { href: "/find-friends", label: "Find Friends", icon: "👥" },
+        { href: "/profile", label: "Profile", icon: "👤" },
     ];
 
     if (!user) return null;
