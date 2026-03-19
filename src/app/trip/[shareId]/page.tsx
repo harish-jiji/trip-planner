@@ -153,11 +153,12 @@ export default function PublicTripPage() {
             <div className="max-w-5xl mx-auto px-4 sm:px-8 grid grid-cols-1 md:grid-cols-12 gap-10">
                 {/* Map Panel */}
                 <div className="md:col-span-12 lg:col-span-7 xl:col-span-7">
-                    <div className="bg-white dark:bg-[#1E293B] p-2 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm sticky top-24">
-                        <div className="h-[400px] md:h-[600px] w-full rounded-[1.5rem] overflow-hidden relative z-0 border border-gray-100 dark:border-gray-800">
+                    <div className="bg-white dark:bg-[#1E293B] p-2 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm md:sticky md:top-24">
+                        <div className="h-[50vh] md:h-[600px] w-full rounded-[1.5rem] overflow-hidden relative z-0 border border-gray-100 dark:border-gray-800">
                             <TripMap
                                 locations={trip.locations}
                                 route={route}
+                                className="w-full h-full"
                             />
                         </div>
                     </div>

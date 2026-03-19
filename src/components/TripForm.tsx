@@ -20,9 +20,10 @@ interface Props {
     isSaving: boolean;
     onSave: (data: TripFormData) => Promise<void>;
     submitButtonText?: string;
+    headerActions?: React.ReactNode;
 }
 
-export default function TripForm({ initialData, isSaving, onSave, submitButtonText = "Save Trip" }: Props) {
+export default function TripForm({ initialData, isSaving, onSave, submitButtonText = "Save Trip", headerActions }: Props) {
     const [title, setTitle] = useState(initialData?.title || "");
     const [description, setDescription] = useState(initialData?.description || "");
     const [locations, setLocations] = useState<LocationStop[]>(initialData?.locations || []);
@@ -136,42 +137,75 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row h-full min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
-            {/* Left Column (Planner / Stops) */}
-            <div className="w-full lg:w-[480px] xl:w-[560px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-[#0F172A] border-r border-gray-100 dark:border-gray-800 lg:h-screen lg:overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row h-screen bg-[#0F172A] overflow-hidden">
+            {/* Right Column (Map Area on desktop, Top Area on mobile) */}
+            <div className="flex-1 flex flex-col h-[65vh] lg:h-full bg-slate-900 border-b lg:border-b-0 lg:border-l border-slate-800 order-1 lg:order-2 overflow-hidden relative">
+                <MapSearch
+                    onSelect={(place: any) => {
+                        setLocations([
+                            ...locations,
+                            { lat: place.lat, lng: place.lng, name: place.name }
+                        ]);
+                        setSelectedPosition([place.lat, place.lng]);
+                    }}
+                />
+                
+                <div className="flex-1 min-h-0 relative z-0 pt-2">
+                    <TripMap
+                        locations={locations}
+                        setLocations={setLocations}
+                        route={route}
+                        className="w-full h-full"
+                        selectedPosition={selectedPosition}
+                    />
+                </div>
+            </div>
+
+            {/* Left Column (Planner / Stops) - Mobile Bottom Sheet (35% on mobile) */}
+            <div className="w-full lg:w-[480px] xl:w-[560px] flex-shrink-0 flex flex-col h-[35vh] lg:h-full bg-slate-900 lg:bg-white lg:dark:bg-[#0F172A] rounded-t-2xl lg:rounded-none border-t border-slate-700 lg:border-t-0 lg:border-r lg:border-gray-800 overflow-y-auto order-2 lg:order-1 relative z-50">
+                {/* Mobile Drag Indicator */}
+                <div className="w-12 h-1 bg-slate-800 rounded-full mx-auto mt-4 mb-2 md:hidden opacity-50"></div>
+                
                 <div className="p-6 md:p-8 flex flex-col gap-6">
                     {/* Header Info */}
-                    <div className="bg-white dark:bg-[#1E293B] p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-800 space-y-5 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                    <div className="bg-slate-800 lg:bg-white lg:dark:bg-[#1E293B] p-6 rounded-3xl shadow-sm border border-slate-700 lg:border-gray-800 space-y-5 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                         <input
                             value={title}
                             required
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="Name your trip..."
-                            className="w-full text-3xl font-black bg-transparent border-none p-0 focus:ring-0 placeholder:text-gray-300 dark:placeholder:text-gray-700 text-gray-900 dark:text-white relative z-10"
+                            className="w-full text-3xl font-black bg-transparent border-none p-0 focus:ring-0 placeholder:text-slate-600 lg:placeholder:text-gray-300 text-white lg:text-gray-900 lg:dark:text-white relative z-10"
                         />
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Add a short description about your travel..."
-                            className="w-full text-base text-gray-500 dark:text-gray-400 bg-transparent border-none resize-none focus:ring-0 p-0 placeholder:text-gray-300 dark:placeholder:text-gray-700 min-h-[60px] relative z-10"
+                            placeholder="Add a short description..."
+                            className="w-full text-base text-slate-400 lg:text-gray-500 bg-transparent border-none resize-none focus:ring-0 p-0 placeholder:text-slate-600 lg:placeholder:text-gray-300 min-h-[60px] relative z-10"
                         />
-                        <div className="flex items-center justify-between pt-5 border-t border-gray-100 dark:border-gray-800 relative z-10">
+
+                        {headerActions && (
+                            <div className="pt-2 relative z-10">
+                                {headerActions}
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-5 border-t border-slate-700 lg:border-gray-800 relative z-10">
                             <select
                                 value={mode}
                                 onChange={(e) => setMode(e.target.value as TravelMode)}
-                                className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-[#38BDF8] font-semibold border-none rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer transition-colors"
+                                className="bg-blue-900/40 lg:bg-blue-50 text-blue-300 lg:text-blue-700 font-semibold border-none rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer transition-colors"
                             >
-                                <option value="car">🚗 Car</option>
-                                <option value="motorbike">🏍️ Motorbike</option>
-                                <option value="bicycle">🚲 Bicycle</option>
-                                <option value="walk">🚶 Walk</option>
+                                <option value="car" className="bg-slate-900">🚗 Car</option>
+                                <option value="motorbike" className="bg-slate-900">🏍️ Motorbike</option>
+                                <option value="bicycle" className="bg-slate-900">🚲 Bicycle</option>
+                                <option value="walk" className="bg-slate-900">🚶 Walk</option>
                             </select>
 
                             {parseFloat(distance) > 0 && (
-                                <div className="flex items-center gap-4 text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-[#0F172A] px-4 py-2 rounded-xl shadow-inner border border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center gap-4 text-sm font-semibold text-slate-400 lg:text-gray-500 bg-slate-900/50 lg:bg-gray-50 px-4 py-2 rounded-xl border border-slate-700 lg:border-gray-100">
                                     <span className="flex items-center gap-1.5"><span>📏</span> {distance}k</span>
-                                    <span className="w-px h-4 bg-gray-300 dark:bg-gray-700"></span>
+                                    <span className="w-px h-4 bg-slate-700 lg:bg-gray-300"></span>
                                     <span className="flex items-center gap-1.5"><span>⏱️</span> {parseInt(duration) > 60 ? `${(parseInt(duration) / 60).toFixed(1)}h` : `${duration}m`}</span>
                                 </div>
                             )}
@@ -179,16 +213,16 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
                     </div>
 
                     {/* Stops List */}
-                    <div className="flex flex-col gap-5 pt-2 relative pb-40 lg:pb-32">
+                    <div className="flex flex-col gap-5 pt-2 relative pb-20 lg:pb-32">
                         <div className="flex items-center justify-between px-2">
-                            <h3 className="font-extrabold text-xl tracking-tight text-gray-900 dark:text-white">Trip Route</h3>
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{locations.length} STOPS</span>
+                            <h3 className="font-extrabold text-xl tracking-tight text-white lg:text-gray-900 lg:dark:text-white">Trip Route</h3>
+                            <span className="text-xs font-bold text-slate-500 lg:text-gray-400 uppercase tracking-widest">{locations.length} STOPS</span>
                         </div>
 
                         {locations.length === 0 && (
-                            <div className="py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl text-center flex flex-col items-center">
+                            <div className="py-12 border-2 border-dashed border-slate-800 lg:border-gray-200 lg:dark:border-gray-800 rounded-3xl text-center flex flex-col items-center">
                                 <div className="text-4xl mb-3 opacity-50">📍</div>
-                                <p className="text-gray-500 dark:text-gray-400 font-medium">Search the map to add stops.</p>
+                                <p className="text-slate-500 lg:text-gray-500 font-medium">Search the map to add stops.</p>
                             </div>
                         )}
 
@@ -205,10 +239,10 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
 
                                 {segments[index] && (
                                     <div className="flex justify-center -my-1 z-10 relative">
-                                        <div className="bg-white dark:bg-[#1E293B] shadow-sm border border-gray-100 dark:border-gray-800 px-4 py-2 rounded-full text-xs font-bold text-gray-500 flex items-center gap-3">
-                                            <span className="flex items-center gap-1 text-blue-600 dark:text-[#38BDF8]"><span>📏</span> {segments[index].distanceKm}km</span>
-                                            <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700" />
-                                            <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400"><span>⏱️</span> {segments[index].durationMin}m</span>
+                                        <div className="bg-slate-800 lg:bg-white shadow-sm border border-slate-700 lg:border-gray-800 px-4 py-2 rounded-full text-xs font-bold text-slate-400 lg:text-gray-500 flex items-center gap-3">
+                                            <span className="flex items-center gap-1 text-blue-400"><span>📏</span> {segments[index].distanceKm}km</span>
+                                            <span className="w-1 h-1 rounded-full bg-slate-600 lg:bg-gray-300" />
+                                            <span className="flex items-center gap-1 text-purple-400"><span>⏱️</span> {segments[index].durationMin}m</span>
                                         </div>
                                     </div>
                                 )}
@@ -217,11 +251,11 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
                     </div>
                 </div>
 
-                {/* Bottom Action Bar (Fixed at bottom of left column on desktop, fixed bottom screen on mobile) */}
-                <div className="fixed lg:sticky bottom-0 left-0 right-0 lg:left-auto lg:right-auto w-full lg:w-auto p-4 md:p-6 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 z-40 lg:mt-auto flex flex-col gap-3">
+                {/* Bottom Action Bar */}
+                <div className="sticky bottom-0 left-0 right-0 w-full p-4 md:p-6 bg-slate-900/90 lg:bg-white/80 lg:dark:bg-[#0F172A]/80 backdrop-blur-xl border-t border-slate-800 lg:border-gray-200 z-[60] mt-auto flex flex-col gap-3">
                     <div className="flex justify-between items-center px-2">
-                        <span className="text-gray-500 dark:text-gray-400 font-bold text-sm tracking-wide uppercase">Est. Trip Cost</span>
-                        <span className="text-2xl font-black text-gray-900 dark:text-white">₹{totalCost.toLocaleString()}</span>
+                        <span className="text-slate-500 font-bold text-sm tracking-wide uppercase">Est. Trip Cost</span>
+                        <span className="text-2xl font-black text-white lg:text-gray-900 lg:dark:text-white">₹{totalCost.toLocaleString()}</span>
                     </div>
                     <button
                         type="submit"
@@ -231,45 +265,6 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
                         {isSaving ? "Saving Trip..." : submitButtonText}
                     </button>
                 </div>
-            </div>
-
-            {/* Right Column (Map) */}
-            <div className="flex-1 h-[60vh] lg:h-screen sticky top-0 md:top-[73px] lg:top-0 z-0 bg-gray-100 dark:bg-gray-900 flex flex-col order-first lg:order-last border-b lg:border-b-0 border-gray-200 dark:border-gray-800 overflow-hidden relative">
-                <MapSearch
-                    onSelect={(place: any) => {
-                        setLocations([
-                            ...locations,
-                            { lat: place.lat, lng: place.lng, name: place.name }
-                        ]);
-                        setSelectedPosition([place.lat, place.lng]);
-                    }}
-                />
-                
-                <div className="w-full h-full relative z-0">
-                    <TripMap
-                        locations={locations}
-                        setLocations={setLocations}
-                        route={route}
-                        className="w-full h-full"
-                        selectedPosition={selectedPosition}
-                    />
-                </div>
-
-                {/* Mobile Bottom Sheet (Like Google Maps) */}
-                {locations.length > 0 && (
-                    <div className="fixed bottom-[88px] left-0 right-0 bg-white dark:bg-slate-900 rounded-t-3xl p-5 md:hidden z-[100] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.2)] border-t border-gray-100 dark:border-gray-800 max-h-[40vh] overflow-y-auto">
-                        <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 mx-auto mb-4 rounded-full"></div>
-                        <h3 className="text-gray-900 dark:text-white font-extrabold mb-3 text-lg tracking-tight">Your Stops</h3>
-                        <div className="flex flex-col gap-2">
-                            {locations.map((stop, i) => (
-                                <div key={i} className="text-sm text-gray-700 dark:text-gray-300 font-medium flex gap-3 pb-2 border-b border-gray-50 dark:border-gray-800/50 last:border-0 last:pb-0">
-                                    <span className="text-blue-600 dark:text-[#38BDF8] font-bold">{i + 1}.</span> 
-                                    <span className="truncate">{stop.name}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
             {/* Reorder Modal Overlay */}
             {reorderIndex !== null && (

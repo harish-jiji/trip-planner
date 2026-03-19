@@ -78,7 +78,7 @@ const FlyToLocation = ({ position }: { position?: [number, number] | null }) => 
     const map = useMap();
     useEffect(() => {
         if (position) {
-            map.flyTo(position, 13);
+            map.setView(position, 14);
         }
     }, [position, map]);
     return null;
@@ -145,6 +145,16 @@ const RouteDrawer = ({ stops }: { stops: Location[] }) => {
 };
 
 export default function TripMap({ locations, setLocations, route, className = "h-[400px] w-full", selectedPosition }: Props) {
+    const mapRef = useRef<L.Map | null>(null);
+
+    useEffect(() => {
+        if (mapRef.current) {
+            setTimeout(() => {
+                mapRef.current?.invalidateSize();
+            }, 300);
+        }
+    }, []);
+
     return (
         <MapContainer
             center={locations.length > 0 ? [locations[0].lat, locations[0].lng] : [20.5937, 78.9629]}
@@ -152,6 +162,7 @@ export default function TripMap({ locations, setLocations, route, className = "h
             // Use className for sizing, style only for zIndex if needed
             className={`${className} z-0 rounded-lg`}
             style={{ zIndex: 0 }}
+            ref={(map) => { if (map) mapRef.current = map; }}
         >
             <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

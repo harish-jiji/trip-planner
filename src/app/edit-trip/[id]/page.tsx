@@ -94,11 +94,9 @@ export default function EditTripPage() {
         }
     };
 
-    const shareTripWithFriend = async (friend: any) => {
+    const shareTripWithFriend = async (friendId: string) => {
         if (!user) return;
         try {
-            const friendId = friend.id;
-
             await addDoc(collection(db, "receivedTrips"), {
                 tripId: id,
                 fromUserId: user.uid,
@@ -119,6 +117,12 @@ export default function EditTripPage() {
         }
     };
 
+    const copyLink = () => {
+        const url = `${window.location.origin}/trip/${tripShareId}`;
+        navigator.clipboard.writeText(url);
+        alert("Public link copied to clipboard!\n" + url);
+    };
+
     if (loading) {
         return (
             <PlannerLayout>
@@ -131,33 +135,31 @@ export default function EditTripPage() {
 
     return (
         <PlannerLayout>
-            <div className="h-full relative">
+            <div className="h-full">
                 <TripForm
                     initialData={initialData}
                     isSaving={saving}
                     onSave={handleUpdate}
                     submitButtonText="💾 Save Changes"
+                    headerActions={
+                        <div className="flex gap-2 flex-wrap">
+                            <button
+                                type="button"
+                                onClick={() => setShareModal(true)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-bold transition-colors shadow-md shadow-purple-500/20"
+                            >
+                                👥 Share
+                            </button>
+                            <button
+                                type="button"
+                                onClick={copyLink}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-bold transition-colors shadow-md shadow-blue-500/20"
+                            >
+                                🔗 Copy Link
+                            </button>
+                        </div>
+                    }
                 />
-                <div className="absolute top-4 right-4 z-40 flex flex-wrap gap-2 justify-end">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            const url = `${window.location.origin}/trip/${tripShareId}`;
-                            navigator.clipboard.writeText(url);
-                            alert("Public link copied to clipboard!\n" + url);
-                        }}
-                        className="bg-blue-600 dark:bg-blue-600 border border-blue-500 hover:bg-blue-700 text-white shadow-lg px-4 py-2 rounded-xl text-sm font-bold transition-colors"
-                    >
-                        🔗 Copy Link
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setShareModal(true)}
-                        className="bg-purple-600 dark:bg-purple-600 border border-purple-500 hover:bg-purple-700 text-white shadow-lg px-4 py-2 rounded-xl text-sm font-bold transition-colors"
-                    >
-                        👥 Share With Friend
-                    </button>
-                </div>
 
                 {shareModal && (
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -184,7 +186,7 @@ export default function EditTripPage() {
                                             </div>
                                             <button
                                                 type="button"
-                                                onClick={() => shareTripWithFriend(friend)}
+                                                onClick={() => shareTripWithFriend(friend.id)}
                                                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-green-500/20 transition-all shrink-0"
                                             >
                                                 Share

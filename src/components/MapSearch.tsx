@@ -59,35 +59,30 @@ export default function MapSearch({ onSelect }: Props) {
   };
 
   return (
-    <div className="absolute top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-xl z-[1000]">
-      <div className="bg-white dark:bg-slate-900 shadow-xl rounded-xl p-2 border border-gray-100 dark:border-gray-800 flex items-center">
-        <div className="text-gray-400 ml-2">
-            <Search size={20} />
-        </div>
+    <div className="w-full z-[1000] p-3 bg-slate-900 border-b border-slate-800">
+      <div className="bg-slate-800 text-white shadow-lg rounded-full px-4 py-1 flex items-center border border-white/5 outline-none">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search places..."
-          className="w-full bg-transparent p-3 outline-none text-gray-900 dark:text-white"
+          className="w-full bg-transparent px-2 py-3 outline-none text-white text-base placeholder:text-gray-400"
         />
       </div>
 
-
-
       {results.length > 0 && query.length >= 2 && (
-        <div className="bg-white dark:bg-slate-900 mt-2 rounded-xl max-h-60 overflow-y-auto shadow-xl border border-gray-100 dark:border-gray-800">
+        <div className="absolute top-[72px] left-3 right-3 bg-slate-900 rounded-xl max-h-60 overflow-y-auto shadow-2xl border border-white/5 z-[1001]">
           {results.map((place, index) => (
             <div
               key={index}
               onClick={() => selectPlace(place)}
-              className="p-4 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer border-b border-gray-50 dark:border-gray-800 last:border-0 transition-colors flex items-center gap-3"
+              className="p-3 hover:bg-slate-800 cursor-pointer transition-colors flex items-center gap-3 group"
             >
-              <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 text-blue-500">📍</div>
-              <div>
-                <div className="font-bold text-[14px] text-gray-900 dark:text-white line-clamp-1">
+              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 text-blue-400">📍</div>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-[14px] text-white line-clamp-1">
                     {place.name || place.display_name?.split(',')[0]}
                 </div>
-                <div className="text-[12px] font-medium text-gray-500 max-w-[90%] truncate">
+                <div className="text-[11px] font-medium text-gray-500 truncate">
                     {place.display_name}
                 </div>
               </div>
