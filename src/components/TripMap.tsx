@@ -78,7 +78,9 @@ const FlyToLocation = ({ position }: { position?: [number, number] | null }) => 
     const map = useMap();
     useEffect(() => {
         if (position) {
-            map.setView(position, 14);
+            map.flyTo(position, 14, {
+                duration: 1.5
+            });
         }
     }, [position, map]);
     return null;
@@ -127,7 +129,14 @@ const RouteDrawer = ({ stops }: { stops: Location[] }) => {
             createMarker: () => null
         };
         
-        const routing = L.Routing.control(routingOptions).addTo(map);
+        const routing = L.Routing.control(routingOptions);
+        
+        // Silence and handle routing errors
+        routing.on('routingerror', function(e: any) {
+            console.warn("Map Routing Info: Could not find a path between these points. This can happen if points are on separate islands or too far from roads.");
+        });
+
+        routing.addTo(map);
         routingRef.current = routing;
 
         return () => {

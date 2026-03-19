@@ -41,7 +41,7 @@ export default function CreateTripPage() {
     };
 
     return (
-        <PlannerLayout>
+        <PlannerLayout fullHeight>
             <div className="h-full">
                 <TripForm
                     isSaving={saving}

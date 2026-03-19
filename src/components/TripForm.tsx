@@ -137,9 +137,9 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row h-screen bg-[#0F172A] overflow-hidden">
-            {/* Right Column (Map Area on desktop, Top Area on mobile) */}
-            <div className="flex-1 flex flex-col h-[65vh] lg:h-full bg-slate-900 border-b lg:border-b-0 lg:border-l border-slate-800 order-1 lg:order-2 overflow-hidden relative">
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-screen lg:h-screen bg-[#0F172A] lg:overflow-hidden transition-all duration-300">
+            {/* Global Search Bar - Natural flow on mobile, part of fixed layout on desktop */}
+            <div className="flex-shrink-0 bg-slate-900 z-10">
                 <MapSearch
                     onSelect={(place: any) => {
                         setLocations([
@@ -149,123 +149,133 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
                         setSelectedPosition([place.lat, place.lng]);
                     }}
                 />
-                
-                <div className="flex-1 min-h-0 relative z-0 pt-2">
-                    <TripMap
-                        locations={locations}
-                        setLocations={setLocations}
-                        route={route}
-                        className="w-full h-full"
-                        selectedPosition={selectedPosition}
-                    />
-                </div>
             </div>
 
-            {/* Left Column (Planner / Stops) - Mobile Bottom Sheet (35% on mobile) */}
-            <div className="w-full lg:w-[480px] xl:w-[560px] flex-shrink-0 flex flex-col h-[35vh] lg:h-full bg-slate-900 lg:bg-white lg:dark:bg-[#0F172A] rounded-t-2xl lg:rounded-none border-t border-slate-700 lg:border-t-0 lg:border-r lg:border-gray-800 overflow-y-auto order-2 lg:order-1 relative z-50">
-                {/* Mobile Drag Indicator */}
-                <div className="w-12 h-1 bg-slate-800 rounded-full mx-auto mt-4 mb-2 md:hidden opacity-50"></div>
-                
-                <div className="p-6 md:p-8 flex flex-col gap-6">
-                    {/* Header Info */}
-                    <div className="bg-slate-800 lg:bg-white lg:dark:bg-[#1E293B] p-6 rounded-3xl shadow-sm border border-slate-700 lg:border-gray-800 space-y-5 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                        <input
-                            value={title}
-                            required
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Name your trip..."
-                            className="w-full text-3xl font-black bg-transparent border-none p-0 focus:ring-0 placeholder:text-slate-600 lg:placeholder:text-gray-300 text-white lg:text-gray-900 lg:dark:text-white relative z-10"
+            <div className="flex flex-col lg:flex-row flex-1 lg:overflow-hidden bg-[#0F172A]">
+                {/* Map Area - Fixed height on mobile, but scrolls with page. Fills remaining on desktop. */}
+                <div className="h-[40vh] flex-shrink-0 lg:h-full lg:flex-1 bg-slate-900 lg:order-2 relative border-b border-slate-800 lg:border-b-0 lg:border-l">
+                    <div className="w-full h-full relative z-0">
+                        <TripMap
+                            locations={locations}
+                            setLocations={setLocations}
+                            route={route}
+                            className="w-full h-full"
+                            selectedPosition={selectedPosition}
                         />
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Add a short description..."
-                            className="w-full text-base text-slate-400 lg:text-gray-500 bg-transparent border-none resize-none focus:ring-0 p-0 placeholder:text-slate-600 lg:placeholder:text-gray-300 min-h-[60px] relative z-10"
-                        />
+                    </div>
+                </div>
 
-                        {headerActions && (
-                            <div className="pt-2 relative z-10">
-                                {headerActions}
-                            </div>
-                        )}
+                {/* Content Panel - Scrolls with the rest of the page on mobile, scrollable only here on desktop. */}
+                <div className="flex-1 lg:w-[480px] xl:w-[560px] flex-shrink-0 flex flex-col bg-slate-900 lg:bg-white lg:dark:bg-[#0F172A] lg:order-1 lg:overflow-hidden relative">
+                    <div className="flex-1 lg:overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
+                        {/* Header Info Card */}
+                        <div className="bg-slate-800 lg:bg-white lg:dark:bg-[#1E293B] p-6 rounded-[32px] shadow-sm border border-slate-700 lg:border-gray-800 space-y-5 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                            
+                            <input
+                                value={title}
+                                required
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Name your trip..."
+                                className="w-full text-3xl font-black bg-transparent border-none p-0 focus:ring-0 placeholder:text-slate-600 lg:placeholder:text-gray-300 text-white lg:text-gray-900 lg:dark:text-white relative z-10"
+                            />
+                            
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Add a short description..."
+                                className="w-full text-base text-slate-400 lg:text-gray-500 bg-transparent border-none resize-none focus:ring-0 p-0 placeholder:text-slate-600 lg:placeholder:text-gray-300 min-h-[60px] relative z-10"
+                            />
 
-                        <div className="flex items-center justify-between pt-5 border-t border-slate-700 lg:border-gray-800 relative z-10">
-                            <select
-                                value={mode}
-                                onChange={(e) => setMode(e.target.value as TravelMode)}
-                                className="bg-blue-900/40 lg:bg-blue-50 text-blue-300 lg:text-blue-700 font-semibold border-none rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer transition-colors"
-                            >
-                                <option value="car" className="bg-slate-900">🚗 Car</option>
-                                <option value="motorbike" className="bg-slate-900">🏍️ Motorbike</option>
-                                <option value="bicycle" className="bg-slate-900">🚲 Bicycle</option>
-                                <option value="walk" className="bg-slate-900">🚶 Walk</option>
-                            </select>
-
-                            {parseFloat(distance) > 0 && (
-                                <div className="flex items-center gap-4 text-sm font-semibold text-slate-400 lg:text-gray-500 bg-slate-900/50 lg:bg-gray-50 px-4 py-2 rounded-xl border border-slate-700 lg:border-gray-100">
-                                    <span className="flex items-center gap-1.5"><span>📏</span> {distance}k</span>
-                                    <span className="w-px h-4 bg-slate-700 lg:bg-gray-300"></span>
-                                    <span className="flex items-center gap-1.5"><span>⏱️</span> {parseInt(duration) > 60 ? `${(parseInt(duration) / 60).toFixed(1)}h` : `${duration}m`}</span>
+                            {headerActions && (
+                                <div className="pt-2 relative z-10">
+                                    {headerActions}
                                 </div>
                             )}
-                        </div>
-                    </div>
 
-                    {/* Stops List */}
-                    <div className="flex flex-col gap-5 pt-2 relative pb-20 lg:pb-32">
-                        <div className="flex items-center justify-between px-2">
-                            <h3 className="font-extrabold text-xl tracking-tight text-white lg:text-gray-900 lg:dark:text-white">Trip Route</h3>
-                            <span className="text-xs font-bold text-slate-500 lg:text-gray-400 uppercase tracking-widest">{locations.length} STOPS</span>
-                        </div>
+                            <div className="flex items-center justify-between pt-5 border-t border-slate-700 lg:border-gray-800 relative z-10">
+                                <select
+                                    value={mode}
+                                    onChange={(e) => setMode(e.target.value as TravelMode)}
+                                    className="bg-blue-900/40 lg:bg-blue-50 text-blue-300 lg:text-blue-700 font-bold border-none rounded-2xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
+                                >
+                                    <option value="car" className="bg-slate-900 lg:bg-white text-white lg:text-gray-900">🚗 Car</option>
+                                    <option value="motorbike" className="bg-slate-900 lg:bg-white text-white lg:text-gray-900">🏍️ Motorbike</option>
+                                    <option value="bicycle" className="bg-slate-900 lg:bg-white text-white lg:text-gray-900">🚲 Bicycle</option>
+                                    <option value="walk" className="bg-slate-900 lg:bg-white text-white lg:text-gray-900">🚶 Walk</option>
+                                </select>
 
-                        {locations.length === 0 && (
-                            <div className="py-12 border-2 border-dashed border-slate-800 lg:border-gray-200 lg:dark:border-gray-800 rounded-3xl text-center flex flex-col items-center">
-                                <div className="text-4xl mb-3 opacity-50">📍</div>
-                                <p className="text-slate-500 lg:text-gray-500 font-medium">Search the map to add stops.</p>
-                            </div>
-                        )}
-
-                        {locations.map((loc, index) => (
-                            <div key={index} className="flex flex-col gap-3 relative">
-                                <StopCard 
-                                    loc={loc} 
-                                    index={index} 
-                                    dragIndex={dragIndex} 
-                                    locations={locations} 
-                                    setLocations={setLocations} 
-                                    setReorderIndex={setReorderIndex} 
-                                />
-
-                                {segments[index] && (
-                                    <div className="flex justify-center -my-1 z-10 relative">
-                                        <div className="bg-slate-800 lg:bg-white shadow-sm border border-slate-700 lg:border-gray-800 px-4 py-2 rounded-full text-xs font-bold text-slate-400 lg:text-gray-500 flex items-center gap-3">
-                                            <span className="flex items-center gap-1 text-blue-400"><span>📏</span> {segments[index].distanceKm}km</span>
-                                            <span className="w-1 h-1 rounded-full bg-slate-600 lg:bg-gray-300" />
-                                            <span className="flex items-center gap-1 text-purple-400"><span>⏱️</span> {segments[index].durationMin}m</span>
-                                        </div>
+                                {parseFloat(distance) > 0 && (
+                                    <div className="flex items-center gap-4 text-xs font-bold text-slate-400 lg:text-gray-500 bg-slate-900/50 lg:bg-gray-50 px-4 py-2.5 rounded-2xl border border-slate-700 lg:border-gray-100">
+                                        <span className="flex items-center gap-1.5 uppercase"><span>📏</span> {distance}k</span>
+                                        <span className="w-px h-3 bg-slate-700 lg:bg-gray-300"></span>
+                                        <span className="flex items-center gap-1.5 uppercase"><span>⏱️</span> {parseInt(duration) > 60 ? `${(parseInt(duration) / 60).toFixed(1)}h` : `${duration}m`}</span>
                                     </div>
                                 )}
                             </div>
-                        ))}
-                    </div>
-                </div>
+                        </div>
 
-                {/* Bottom Action Bar */}
-                <div className="sticky bottom-0 left-0 right-0 w-full p-4 md:p-6 bg-slate-900/90 lg:bg-white/80 lg:dark:bg-[#0F172A]/80 backdrop-blur-xl border-t border-slate-800 lg:border-gray-200 z-[60] mt-auto flex flex-col gap-3">
-                    <div className="flex justify-between items-center px-2">
-                        <span className="text-slate-500 font-bold text-sm tracking-wide uppercase">Est. Trip Cost</span>
-                        <span className="text-2xl font-black text-white lg:text-gray-900 lg:dark:text-white">₹{totalCost.toLocaleString()}</span>
+                        {/* Stops List */}
+                        <div className="flex flex-col gap-5 pt-2 relative">
+                            <div className="flex items-center justify-between px-2">
+                                <h3 className="font-black text-xl tracking-tight text-white lg:text-gray-900 lg:dark:text-white uppercase">Trip Route</h3>
+                                <span className="text-[10px] font-black text-slate-500 lg:text-gray-400 uppercase tracking-[0.2em]">{locations.length} STOPS</span>
+                            </div>
+
+                            {locations.length === 0 && (
+                                <div className="py-16 border-2 border-dashed border-slate-800 lg:border-gray-200 lg:dark:border-gray-800 rounded-[32px] text-center flex flex-col items-center">
+                                    <div className="text-5xl mb-4 grayscale opacity-30">📍</div>
+                                    <p className="text-slate-500 lg:text-gray-500 font-bold uppercase text-xs tracking-widest">Search the map to add stops</p>
+                                </div>
+                            )}
+
+                            {locations.map((loc, index) => (
+                                <div key={index} className="flex flex-col gap-3 relative">
+                                    <StopCard 
+                                        loc={loc} 
+                                        index={index} 
+                                        dragIndex={dragIndex} 
+                                        locations={locations} 
+                                        setLocations={setLocations} 
+                                        setReorderIndex={setReorderIndex} 
+                                    />
+
+                                    {segments[index] && (
+                                        <div className="flex justify-center -my-1 z-10 relative">
+                                            <div className="bg-slate-800 lg:bg-white shadow-md border border-slate-700 lg:border-gray-800 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400 lg:text-gray-500 flex items-center gap-4">
+                                                <span className="flex items-center gap-1.5 text-blue-400"><span>📏</span> {segments[index].distanceKm}km</span>
+                                                <span className="w-1 h-1 rounded-full bg-slate-700 lg:bg-gray-300" />
+                                                <span className="flex items-center gap-1.5 text-indigo-400"><span>⏱️</span> {segments[index].durationMin}m</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        
+                        {/* Summary and Save Bar - Integrated into flow for mobile, fixed for desktop */}
+                        <div className="mt-8 p-6 bg-slate-800 lg:bg-blue-50/50 dark:lg:bg-blue-900/10 rounded-[32px] border border-slate-700 lg:border-blue-500/20 shadow-sm flex flex-col gap-4">
+                            <div className="flex justify-between items-center px-2">
+                                <span className="text-slate-500 lg:text-blue-500/60 font-black text-xs tracking-[0.1em] uppercase">Est. Trip Cost</span>
+                                <span className="text-3xl font-black text-white lg:text-blue-600 lg:dark:text-blue-400">₹{totalCost.toLocaleString()}</span>
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={isSaving}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4.5 rounded-2xl shadow-xl shadow-blue-500/20 transition-all outline-none focus:ring-4 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-lg uppercase tracking-widest"
+                            >
+                                {isSaving ? "Saving Trip..." : submitButtonText}
+                            </button>
+                        </div>
+
+                        {/* Mobile Bottom Padding to clear navigation */}
+                        <div className="h-10 lg:hidden"></div>
                     </div>
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/25 transition-all outline-none focus:ring-4 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-                    >
-                        {isSaving ? "Saving Trip..." : submitButtonText}
-                    </button>
                 </div>
             </div>
+
+
+
             {/* Reorder Modal Overlay */}
             {reorderIndex !== null && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

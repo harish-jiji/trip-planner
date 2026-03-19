@@ -11,7 +11,7 @@ import { auth } from "@/lib/firebaseAuth";
 import { useRouter, usePathname } from "next/navigation";
 import { LayoutDashboard, PlusCircle, Users, User, LogOut, Inbox, Map as MapIcon } from "lucide-react";
 
-export default function PlannerLayout({ children, hideSidebar = false }: { children: React.ReactNode, hideSidebar?: boolean }) {
+export default function PlannerLayout({ children, hideSidebar = false, fullHeight = false }: { children: React.ReactNode, hideSidebar?: boolean, fullHeight?: boolean }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [mounted, setMounted] = useState(false);
@@ -40,7 +40,7 @@ export default function PlannerLayout({ children, hideSidebar = false }: { child
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] font-sans transition-colors">
+        <div className={`bg-[#F8FAFC] dark:bg-[#0F172A] font-sans transition-colors ${fullHeight ? "lg:h-screen lg:overflow-hidden min-h-screen" : "min-h-screen"}`}>
             {!hideSidebar && user && (
                 <>
                     <Sidebar />
@@ -115,7 +115,7 @@ export default function PlannerLayout({ children, hideSidebar = false }: { child
                 </>
             )}
 
-            <main className={`flex-1 flex flex-col min-h-screen ${!hideSidebar && user ? "md:ml-64 pb-24 md:pb-8" : "pb-8"}`}>
+            <main className={`flex-1 flex flex-col ${fullHeight ? "lg:h-full lg:overflow-hidden" : "min-h-screen"} ${!hideSidebar && user ? "md:ml-64" : ""} ${user ? "pb-24 md:pb-8" : "pb-8"}`}>
                 {children}
             </main>
 

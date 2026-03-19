@@ -125,7 +125,7 @@ export default function EditTripPage() {
 
     if (loading) {
         return (
-            <PlannerLayout>
+            <PlannerLayout fullHeight>
                 <div className="flex items-center justify-center h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
                     <div className="w-12 h-12 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-[#38BDF8] rounded-full animate-spin"></div>
                 </div>
@@ -134,7 +134,7 @@ export default function EditTripPage() {
     }
 
     return (
-        <PlannerLayout>
+        <PlannerLayout fullHeight>
             <div className="h-full">
                 <TripForm
                     initialData={initialData}
