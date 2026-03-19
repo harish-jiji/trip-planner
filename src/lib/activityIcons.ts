@@ -9,8 +9,8 @@ export const ACTIVITY_META: Record<
         icon: "🏞",
     },
     hiking: {
-        label: "Hiking",
-        icon: "🥾",
+        label: "Trekking",
+        icon: "🏔️",
     },
     food: {
         label: "Food",
@@ -27,6 +27,14 @@ export const ACTIVITY_META: Record<
     destination: {
         label: "Destination",
         icon: "🏁",
+    },
+    starting_point: {
+        label: "Starting Point",
+        icon: "🏠",
+    },
+    splitting_point: {
+        label: "Splitting Point",
+        icon: "🔀",
     },
     custom: {
         label: "Activity",

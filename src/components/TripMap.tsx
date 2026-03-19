@@ -12,6 +12,10 @@ import {
     Camera, 
     ShoppingBag, 
     Hotel, 
+    Home,
+    Split,
+    Flag,
+    Mountain,
     Map as MapIcon 
 } from "lucide-react";
 
@@ -37,7 +41,11 @@ const createLucideIcon = (activities?: ActivityType[]) => {
     let IconComponent = MapIcon;
     if (activities?.includes("food")) IconComponent = Utensils;
     else if (activities?.includes("sightseeing")) IconComponent = Camera;
+    else if (activities?.includes("hiking")) IconComponent = Mountain;
     else if (activities?.includes("rest_stop")) IconComponent = Hotel;
+    else if (activities?.includes("starting_point")) IconComponent = Home;
+    else if (activities?.includes("splitting_point")) IconComponent = Split;
+    else if (activities?.includes("destination")) IconComponent = Flag;
     else if (activities?.includes("custom")) IconComponent = ShoppingBag;
 
     const iconHtml = renderToString(

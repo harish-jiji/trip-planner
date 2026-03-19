@@ -67,7 +67,7 @@ export default function StopCard({
 
             {/* Activities */}
             <div className="flex flex-wrap gap-2 mb-5">
-                {["sightseeing", "hiking", "food", "meetup", "rest_stop", "destination"].map((act) => {
+                {["starting_point", "sightseeing", "hiking", "food", "meetup", "rest_stop", "splitting_point", "destination"].map((act) => {
                     const isActive = loc.activities?.includes(act as ActivityType);
                     return (
                         <label
@@ -85,6 +85,16 @@ export default function StopCard({
                                     const copy = [...locations];
                                     const set = new Set(copy[index].activities || []);
                                     e.target.checked ? set.add(act as ActivityType) : set.delete(act as ActivityType);
+                                    
+                                    // Special logic: starting_point has no arrival
+                                    if (act === "starting_point" && e.target.checked) {
+                                        copy[index].time = { ...copy[index].time, arrival: undefined };
+                                    }
+                                    // Special logic: destination has no departure
+                                    if (act === "destination" && e.target.checked) {
+                                        copy[index].time = { ...copy[index].time, departure: undefined };
+                                    }
+
                                     copy[index].activities = Array.from(set) as ActivityType[];
                                     setLocations(copy);
                                 }}
@@ -132,21 +142,22 @@ export default function StopCard({
                 )}
             </div>
 
-            {/* Time & Expense Grid */}
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-2">Arrival Time</label>
-                    <input
-                        type="time"
-                        value={loc.time?.arrival || ""}
-                        onChange={(e) => {
-                            const copy = [...locations];
-                            copy[index].time = { ...copy[index].time, arrival: e.target.value };
-                            setLocations(copy);
-                        }}
-                        className="bg-gray-50 dark:bg-[#0F172A] rounded-xl px-3 py-2.5 w-full border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all shadow-inner"
-                    />
-                </div>
+            <div className={`grid gap-4 ${(!loc.activities?.includes("starting_point") && !loc.activities?.includes("destination")) ? "grid-cols-2" : "grid-cols-1"}`}>
+                {!loc.activities?.includes("starting_point") && (
+                    <div>
+                        <label className="block text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-2">Arrival Time</label>
+                        <input
+                            type="time"
+                            value={loc.time?.arrival || ""}
+                            onChange={(e) => {
+                                const copy = [...locations];
+                                copy[index].time = { ...copy[index].time, arrival: e.target.value };
+                                setLocations(copy);
+                            }}
+                            className="bg-gray-50 dark:bg-[#0F172A] rounded-xl px-3 py-2.5 w-full border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all shadow-inner"
+                        />
+                    </div>
+                )}
                 {!loc.activities?.includes("destination") && (
                     <div>
                         <label className="block text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-2">Departure Time</label>
