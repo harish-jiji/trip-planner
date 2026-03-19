@@ -90,17 +90,17 @@ service cloud.firestore {
        ========================= */
     match /receivedTrips/{docId} {
 
-      // Allow queries
-      allow read: if request.auth != null;
+      // Only receiver can read
+      allow read: if request.auth != null
+                  && request.auth.uid == resource.data.toUserId;
 
+      // Only sender can create
       allow create: if request.auth != null
                     && request.auth.uid == request.resource.data.fromUserId;
 
+      // Only receiver can delete (after cloning)
       allow delete: if request.auth != null
-                    && (
-                        request.auth.uid == resource.data.fromUserId
-                        || request.auth.uid == resource.data.toUserId
-                       );
+                    && request.auth.uid == resource.data.toUserId;
     }
 
 

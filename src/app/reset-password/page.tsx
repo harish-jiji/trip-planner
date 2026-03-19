@@ -287,7 +287,7 @@ export default function ResetPasswordPage() {
                 <div className="relative z-10 p-16 flex flex-col justify-between h-full w-full">
                     <div className="flex justify-end w-full">
                         <Link href="/" className="flex items-center gap-3 text-white font-black text-2xl tracking-tight hover:opacity-80 transition-opacity w-max">
-                            Wandr
+                            Trip Planner
                             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-lg border border-white/20">
                                 ✈️
                             </div>

@@ -96,6 +96,42 @@ export default function StopCard({
                 })}
             </div>
 
+            {/* Link Management */}
+            <div className="mb-4">
+                {!loc.showLinkInput && !loc.link && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            const copy = [...locations];
+                            copy[index].showLinkInput = true;
+                            // Optionally auto-fill mapping standard
+                            copy[index].link = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
+                            setLocations(copy);
+                        }}
+                        className="text-blue-500 hover:text-blue-600 dark:text-blue-400 font-medium text-xs flex items-center gap-1 transition-colors"
+                    >
+                        <span className="text-[14px]">🔗</span> Add Link
+                    </button>
+                )}
+
+                {(loc.showLinkInput || loc.link) && (
+                    <div className="flex flex-col gap-1.5 mt-1 relative">
+                        <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">External Link</label>
+                        <input
+                            type="text"
+                            placeholder="Paste location link (e.g. Google Maps, Booking.com)..."
+                            value={loc.link || ""}
+                            onChange={(e) => {
+                                const copy = [...locations];
+                                copy[index].link = e.target.value;
+                                setLocations(copy);
+                            }}
+                            className="bg-gray-50 dark:bg-[#0F172A] rounded-xl px-3 py-2 text-sm border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-blue-400 focus:ring-2 focus:ring-blue-500/50 outline-none w-full"
+                        />
+                    </div>
+                )}
+            </div>
+
             {/* Time & Expense Grid */}
             <div className="grid grid-cols-2 gap-4">
                 <div>

@@ -2,7 +2,7 @@
 
 import PlannerLayout from "@/components/PlannerLayout";
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, doc, getDoc, addDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, addDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
@@ -28,9 +28,28 @@ export default function ReceivedTripsPage() {
                 const snap = await getDocs(q);
 
                 const list: any[] = [];
-                snap.forEach(doc => {
-                    list.push({ id: doc.id, ...doc.data() });
-                });
+                for (const d of snap.docs) {
+                    const recData = d.data();
+                    let tripTitle = "Private Trip";
+                    let shareId = recData.tripId;
+                    
+                    try {
+                        const tripSnap = await getDoc(doc(db, "trips", recData.tripId));
+                        if(tripSnap.exists()) {
+                            tripTitle = tripSnap.data().title || "Untitled Trip";
+                            shareId = tripSnap.data().shareId || recData.tripId;
+                        }
+                    } catch (e) {
+                        console.error("Failed to load underlying trip data:", e);
+                    }
+
+                    list.push({ 
+                        id: d.id, 
+                        ...recData, 
+                        title: tripTitle,
+                        shareId: shareId
+                    });
+                }
 
                 setTrips(list);
             } catch (error) {
@@ -63,10 +82,15 @@ export default function ReceivedTripsPage() {
             await addDoc(collection(db, "trips"), {
                 ...data,
                 ownerId: user.uid,
+                isPublic: false,
+                sharedWithFriends: [],
                 createdAt: new Date(),
-                // Generate a new share ID since this is a new fork
-                shareId: Math.random().toString(36).substring(2, 10)
+                shareId: Math.random().toString(36).substring(2, 10),
+                copiedFrom: tripId
             });
+
+            // Delete original received document avoiding duplicates
+            await deleteDoc(doc(db, "receivedTrips", receivedTripId));
 
             alert("Trip successfully added to your Dashboard!");
             router.push("/dashboard");
@@ -75,6 +99,17 @@ export default function ReceivedTripsPage() {
             alert("Failed to copy trip to your account.");
         } finally {
             setAdding(null);
+        }
+    };
+
+    const handleDelete = async (receivedId: string) => {
+        try {
+            await deleteDoc(doc(db, "receivedTrips", receivedId));
+            setTrips(prev => prev.filter(t => t.id !== receivedId));
+            alert("Trip successfully removed!");
+        } catch (err) {
+            console.error(err);
+            alert("Error deleting trip");
         }
     };
 
@@ -98,40 +133,40 @@ export default function ReceivedTripsPage() {
                 ) : trips.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                         {trips.map(trip => (
-                            <div key={trip.id} className="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-start sm:items-center shadow-sm hover:shadow-md transition-shadow gap-6 w-full">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center rounded-2xl text-2xl font-bold shadow-inner shrink-0">
-                                        📥
-                                    </div>
-                                    <div className="text-left w-full">
-                                        <p className="font-bold text-lg text-gray-900 dark:text-white">Trip from friend</p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium font-mono bg-gray-50 dark:bg-gray-800 inline-block px-2 py-1 rounded-md mt-1 border border-gray-100 dark:border-gray-700">Trip ID: {trip.tripId}</p>
-                                    </div>
+                            <div key={trip.id} className="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex flex-col gap-4 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white capitalize truncate pr-4">{trip.title}</h3>
+                                    <span className="text-xs font-bold bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-1 rounded-md shrink-0">
+                                        from {trip.fromUserName || "friend"}
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-3 w-full sm:w-auto shrink-0 flex-wrap sm:flex-nowrap">
+
+                                <div className="flex gap-2 flex-wrap">
                                     <Link
-                                        href={`/trip/${trip.tripId}`}
-                                        className="flex-1 sm:flex-none text-center bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold px-6 py-3 rounded-xl transition-all border border-gray-200 dark:border-gray-700 shadow-sm"
+                                        href={`/trip/${trip.shareId}`}
+                                        className="flex-1 min-w-[90px] text-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold py-2.5 rounded-xl transition-colors text-sm"
                                     >
                                         View
                                     </Link>
                                     <button
                                         onClick={() => addTripToMyTrips(trip.tripId, trip.id)}
                                         disabled={adding === trip.id}
-                                        className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-green-500/30 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2 border border-green-500"
+                                        className="flex-1 min-w-[90px] bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl transition-colors disabled:opacity-50 text-sm"
                                     >
-                                        {adding === trip.id ? "Adding..." : "Clone Trip"}
+                                        {adding === trip.id ? "Cloning" : "Clone"}
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(trip.id)}
+                                        className="flex-1 min-w-[90px] bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 font-bold py-2.5 rounded-xl transition-colors text-sm"
+                                    >
+                                        Delete
                                     </button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-3xl p-12 text-center shadow-sm">
-                        <div className="text-5xl mb-4 opacity-50">📥</div>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Inbox Empty</h3>
-                        <p className="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">No trips received yet. Trips shared by friends will appear here.</p>
-                    </div>
+                    <p className="text-center text-gray-400">No shared trips</p>
                 )}
             </div>
         </PlannerLayout>

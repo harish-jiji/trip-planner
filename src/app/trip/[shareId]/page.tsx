@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import TripTimeline from "@/components/TripTimeline";
 
@@ -14,6 +14,7 @@ const ModeLabel: Record<string, string> = { car: "Car", bicycle: "Bicycle", walk
 
 export default function PublicTripPage() {
     const { shareId } = useParams();
+    const router = useRouter();
     const [trip, setTrip] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [route, setRoute] = useState<[number, number][]>([]);
@@ -94,7 +95,7 @@ export default function PublicTripPage() {
             <nav className="h-16 flex items-center justify-between px-4 sm:px-8 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50 bg-white/80 dark:bg-[#0F172A]/80 backdrop-blur-xl">
                 <div className="flex items-center gap-3 w-max">
                     <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg pointer-events-none">✈️</div>
-                    <span className="font-extrabold text-lg text-gray-900 dark:text-white tracking-tight">Wandr</span>
+                    <span className="font-extrabold text-lg text-gray-900 dark:text-white tracking-tight">Trip Planner</span>
                 </div>
                 <button 
                     onClick={handleCopy}
@@ -170,6 +171,13 @@ export default function PublicTripPage() {
                             locations={trip.locations}
                         />
                     </div>
+                    
+                    <button
+                      onClick={() => router.push("/")}
+                      className="w-full mt-6 bg-blue-600 hover:bg-blue-700 py-4 font-bold text-white shadow-xl shadow-blue-500/20 transition-all rounded-xl border-none outline-none transform hover:-translate-y-1"
+                    >
+                      🚀 Plan your own trip
+                    </button>
                 </div>
             </div>
         </div>

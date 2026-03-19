@@ -1,20 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Eye, Pencil, Trash, Share2 } from "lucide-react";
 
 export default function TripCard({
     trip,
     cost,
     onDelete,
-    onCopyShareLink,
+    onShare,
     isDeleting,
 }: {
     trip: any;
     cost: number;
     onDelete: (id: string, shareId: string) => void;
-    onCopyShareLink: (shareId: string) => void;
+    onShare: (trip: any) => void;
     isDeleting: boolean;
 }) {
+    const router = useRouter();
     const stops = trip.locations?.length || 0;
     
     // Fallbacks
@@ -34,22 +37,6 @@ export default function TripCard({
                 <div className="relative z-10 flex justify-between items-start">
                     <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl shadow-sm border border-white/30">
                         {ModeEmoji[trip.mode || "car"] || "🗺️"}
-                    </div>
-                    <div className="flex gap-2">
-                        <button 
-                            onClick={(e) => { e.preventDefault(); onCopyShareLink(trip.shareId); }}
-                            className="w-10 h-10 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-md flex items-center justify-center text-white border border-white/20 transition-all hover:scale-105"
-                            title="Copy link"
-                        >
-                            🔗
-                        </button>
-                        <button 
-                            onClick={(e) => { e.preventDefault(); onDelete(trip.id, trip.shareId); }}
-                            className="w-10 h-10 rounded-xl bg-red-500/20 hover:bg-red-500/40 backdrop-blur-md flex items-center justify-center text-white border border-white/20 transition-all hover:scale-105"
-                            title="Delete"
-                        >
-                            🗑️
-                        </button>
                     </div>
                 </div>
                 <div className="relative z-10">
@@ -81,11 +68,20 @@ export default function TripCard({
                     )}
                 </div>
 
-                <Link href={`/edit-trip/${trip.id}`} className="mt-auto block">
-                    <button className="w-full py-3 bg-gray-50 hover:bg-blue-50 dark:bg-gray-800 dark:hover:bg-[#1E293B] hover:text-blue-600 dark:hover:text-[#38BDF8] text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition-all border border-gray-100 dark:border-gray-700">
-                        Edit Trip →
+                <div className="flex flex-wrap gap-2 mt-3">
+                    <button onClick={(e) => { e.preventDefault(); router.push(`/trip/${trip.shareId}`); }} className="flex-1 min-w-[90px] flex justify-center items-center gap-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold py-2.5 px-3 rounded-xl transition-colors border border-blue-100 dark:border-blue-800/30 text-sm">
+                        <Eye size={16} /> View
                     </button>
-                </Link>
+                    <button onClick={(e) => { e.preventDefault(); router.push(`/edit-trip/${trip.id}`); }} className="flex-1 min-w-[90px] flex justify-center items-center gap-2 bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 font-bold py-2.5 px-3 rounded-xl transition-colors border border-yellow-100 dark:border-yellow-800/30 text-sm">
+                        <Pencil size={16} /> Edit
+                    </button>
+                    <button onClick={(e) => { e.preventDefault(); onShare(trip); }} className="flex-1 min-w-[90px] flex justify-center items-center gap-2 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 text-green-600 dark:text-green-400 font-bold py-2.5 px-3 rounded-xl transition-colors border border-green-100 dark:border-green-800/30 text-sm">
+                        <Share2 size={16} /> Share
+                    </button>
+                    <button onClick={(e) => { e.preventDefault(); onDelete(trip.id, trip.shareId); }} className="flex-1 min-w-[90px] flex justify-center items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 px-3 rounded-xl transition-colors shadow-sm text-sm">
+                        <Trash size={16} /> Delete
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -105,6 +105,20 @@ export default function TripTimeline({ locations, totalDistance, totalDuration }
                                             </div>
                                         )}
 
+                                        {loc.link && (
+                                            <div className="mt-2">
+                                                <a
+                                                    href={loc.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 hover:text-blue-600 dark:text-[#38BDF8] dark:hover:text-blue-400 font-bold underline underline-offset-4 text-sm flex items-center gap-1 transition-colors"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <span className="text-[12px] no-underline">↗</span> View More Details
+                                                </a>
+                                            </div>
+                                        )}
+
                                         {/* Activities */}
                                         {loc.activities && loc.activities.length > 0 && (
                                             <div className="flex flex-wrap gap-2">

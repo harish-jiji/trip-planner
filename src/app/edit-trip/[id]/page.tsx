@@ -27,16 +27,23 @@ export default function EditTripPage() {
         if (!user) return;
         const loadFriends = async () => {
             try {
-                const q = query(
-                    collection(db, "friends"),
-                    where("userA", "==", user.uid)
-                );
-                const snap = await getDocs(q);
-                const list: any[] = [];
-                snap.forEach(doc => {
-                    list.push({ id: doc.id, ...doc.data() });
-                });
-                setFriends(list);
+                const q1 = query(collection(db, "friends"), where("userA", "==", user.uid));
+                const q2 = query(collection(db, "friends"), where("userB", "==", user.uid));
+                const [snap1, snap2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+                
+                const friendIds: string[] = [];
+                snap1.forEach(doc => friendIds.push(doc.data().userB));
+                snap2.forEach(doc => friendIds.push(doc.data().userA));
+
+                const loadedFriends: any[] = [];
+                for (const fId of friendIds) {
+                    const userRef = doc(db, "users", fId);
+                    const userSnap = await getDoc(userRef);
+                    if (userSnap.exists()) {
+                        loadedFriends.push({ id: userSnap.id, ...userSnap.data() });
+                    }
+                }
+                setFriends(loadedFriends);
             } catch (error) {
                 console.error("Failed to load friends", error);
             }
@@ -90,11 +97,12 @@ export default function EditTripPage() {
     const shareTripWithFriend = async (friend: any) => {
         if (!user) return;
         try {
-            const friendId = friend.userB || friend.uid;
+            const friendId = friend.id;
 
             await addDoc(collection(db, "receivedTrips"), {
                 tripId: id,
                 fromUserId: user.uid,
+                fromUserName: user.displayName || user.email,
                 toUserId: friendId,
                 createdAt: new Date()
             });
@@ -167,11 +175,11 @@ export default function EditTripPage() {
                                         <div key={friend.id} className="flex justify-between items-center p-4 border border-gray-100 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-gray-800/50">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
-                                                    F
+                                                    {friend.name ? friend.name.charAt(0).toUpperCase() : "F"}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-gray-900 dark:text-white text-sm">Friend ID</p>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-mono truncate max-w-[120px]">{friend.userB || friend.uid}</p>
+                                                    <p className="font-bold text-gray-900 dark:text-white text-sm capitalize">{friend.name || "Unknown User"}</p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate max-w-[120px]">@{friend.username}</p>
                                                 </div>
                                             </div>
                                             <button

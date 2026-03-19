@@ -33,6 +33,7 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
     const [duration, setDuration] = useState("0");
     const [segments, setSegments] = useState<any[]>([]);
     const [reorderIndex, setReorderIndex] = useState<number | null>(null);
+    const [selectedPosition, setSelectedPosition] = useState<[number, number] | null>(null);
 
     const routeRequestId = useRef(0);
     const dragIndex = useRef<number | null>(null);
@@ -233,27 +234,43 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
             </div>
 
             {/* Right Column (Map) */}
-            <div className="flex-1 h-[60vh] lg:h-screen sticky top-0 md:top-[73px] lg:top-0 z-0 bg-gray-100 dark:bg-gray-900 flex flex-col order-first lg:order-last border-b lg:border-b-0 border-gray-200 dark:border-gray-800 overflow-hidden">
-                <div className="absolute top-4 left-4 right-4 z-10 shadow-xl rounded-2xl overflow-hidden pointer-events-auto">
-                    <MapSearch
-                        onSelect={(place: any) => {
-                            setLocations([
-                                ...locations,
-                                { lat: place.lat, lng: place.lng, name: place.name }
-                            ]);
-                        }}
-                    />
-                </div>
+            <div className="flex-1 h-[60vh] lg:h-screen sticky top-0 md:top-[73px] lg:top-0 z-0 bg-gray-100 dark:bg-gray-900 flex flex-col order-first lg:order-last border-b lg:border-b-0 border-gray-200 dark:border-gray-800 overflow-hidden relative">
+                <MapSearch
+                    onSelect={(place: any) => {
+                        setLocations([
+                            ...locations,
+                            { lat: place.lat, lng: place.lng, name: place.name }
+                        ]);
+                        setSelectedPosition([place.lat, place.lng]);
+                    }}
+                />
                 
                 <div className="w-full h-full relative z-0">
                     <TripMap
                         locations={locations}
-                        setLocations={setLocations as any}
+                        setLocations={setLocations}
                         route={route}
+                        className="w-full h-full"
+                        selectedPosition={selectedPosition}
                     />
                 </div>
-            </div>
 
+                {/* Mobile Bottom Sheet (Like Google Maps) */}
+                {locations.length > 0 && (
+                    <div className="fixed bottom-[88px] left-0 right-0 bg-white dark:bg-slate-900 rounded-t-3xl p-5 md:hidden z-[100] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.2)] border-t border-gray-100 dark:border-gray-800 max-h-[40vh] overflow-y-auto">
+                        <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 mx-auto mb-4 rounded-full"></div>
+                        <h3 className="text-gray-900 dark:text-white font-extrabold mb-3 text-lg tracking-tight">Your Stops</h3>
+                        <div className="flex flex-col gap-2">
+                            {locations.map((stop, i) => (
+                                <div key={i} className="text-sm text-gray-700 dark:text-gray-300 font-medium flex gap-3 pb-2 border-b border-gray-50 dark:border-gray-800/50 last:border-0 last:pb-0">
+                                    <span className="text-blue-600 dark:text-[#38BDF8] font-bold">{i + 1}.</span> 
+                                    <span className="truncate">{stop.name}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
             {/* Reorder Modal Overlay */}
             {reorderIndex !== null && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

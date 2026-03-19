@@ -16,6 +16,7 @@ export default function DashboardPage() {
     const [trips, setTrips] = useState<any[]>([]);
     const [isLoadingTrips, setIsLoadingTrips] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [shareOptionsTrip, setShareOptionsTrip] = useState<any>(null);
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -121,7 +122,7 @@ export default function DashboardPage() {
                                 trip={trip} 
                                 cost={calculateCost(trip.locations)}
                                 onDelete={handleDelete}
-                                onCopyShareLink={copyShareLink}
+                                onShare={(t) => setShareOptionsTrip(t)}
                                 isDeleting={deletingId === trip.id}
                             />
                         ))}
@@ -133,6 +134,38 @@ export default function DashboardPage() {
                             </div>
                             <span className="font-bold text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400">Plan new trip</span>
                         </Link>
+                    </div>
+                )}
+
+                {/* Share Options Modal */}
+                {shareOptionsTrip && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Share Trip</h3>
+                                <button onClick={() => setShareOptionsTrip(null)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white text-xl">✕</button>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <button 
+                                    onClick={() => {
+                                        copyShareLink(shareOptionsTrip.shareId);
+                                        setShareOptionsTrip(null);
+                                    }} 
+                                    className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-bold py-3 px-4 rounded-xl transition-colors border border-blue-100 dark:border-blue-800/30 flex justify-center items-center gap-2"
+                                >
+                                    Share via Link
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        router.push(`/edit-trip/${shareOptionsTrip.id}`);
+                                        setShareOptionsTrip(null);
+                                    }} 
+                                    className="bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:hover:bg-purple-900/40 text-purple-600 dark:text-purple-400 font-bold py-3 px-4 rounded-xl transition-colors border border-purple-100 dark:border-purple-800/30 flex justify-center items-center gap-2"
+                                >
+                                    Share with Friend
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

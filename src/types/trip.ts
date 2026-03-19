@@ -15,6 +15,8 @@ export interface LocationStop {
         travel?: number;
         other?: number;
     };
+    link?: string;
+    showLinkInput?: boolean;
 }
 
 export type TravelMode = "car" | "motorbike" | "bicycle" | "walk";
