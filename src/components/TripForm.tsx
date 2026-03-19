@@ -120,7 +120,12 @@ export default function TripForm({ initialData, isSaving, onSave, submitButtonTe
             const cleanLoc: any = { lat: loc.lat, lng: loc.lng };
             if (loc.name) cleanLoc.name = loc.name;
             if (loc.activities?.length) cleanLoc.activities = loc.activities;
-            if (loc.time?.arrival || loc.time?.departure) cleanLoc.time = loc.time;
+            if (loc.time) {
+                const cleanTime: any = {};
+                if (loc.time.arrival && loc.time.arrival !== "") cleanTime.arrival = loc.time.arrival;
+                if (loc.time.departure && loc.time.departure !== "") cleanTime.departure = loc.time.departure;
+                if (Object.keys(cleanTime).length > 0) cleanLoc.time = cleanTime;
+            }
             
             if (loc.expenses) {
                 const cleanExpenses: any = {};
