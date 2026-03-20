@@ -106,7 +106,7 @@ export default function StopCard({
                 })}
             </div>
 
-            {/* Link Management */}
+            {/* Link Management - Optional Social/Attraction Link */}
             <div className="mb-4">
                 {!loc.showLinkInput && !loc.link && (
                     <button
@@ -114,22 +114,20 @@ export default function StopCard({
                         onClick={() => {
                             const copy = [...locations];
                             copy[index].showLinkInput = true;
-                            // Optionally auto-fill mapping standard
-                            copy[index].link = `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
                             setLocations(copy);
                         }}
                         className="text-blue-500 hover:text-blue-600 dark:text-blue-400 font-medium text-xs flex items-center gap-1 transition-colors"
                     >
-                        <span className="text-[14px]">🔗</span> Add Link
+                        <span className="text-[14px]">🔗</span> Add Social/Attraction Link
                     </button>
                 )}
 
                 {(loc.showLinkInput || loc.link) && (
                     <div className="flex flex-col gap-1.5 mt-1 relative">
-                        <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">External Link</label>
+                        <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Attraction / Social Link</label>
                         <input
                             type="text"
-                            placeholder="Paste location link (e.g. Google Maps, Booking.com)..."
+                            placeholder="Instagram, Website, or Info link..."
                             value={loc.link || ""}
                             onChange={(e) => {
                                 const copy = [...locations];

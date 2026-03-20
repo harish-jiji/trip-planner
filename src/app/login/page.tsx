@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebaseAuth";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
     const { user, loading } = useAuth();
@@ -97,10 +98,10 @@ export default function LoginPage() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                        title="Toggle show password"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 dark:hover:text-[#38BDF8] transition-colors p-1"
+                                        title={showPassword ? "Hide password" : "Show password"}
                                     >
-                                        👁
+                                        {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                                     </button>
                                 </div>
                             </div>

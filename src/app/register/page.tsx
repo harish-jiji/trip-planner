@@ -11,6 +11,7 @@ import { doc, setDoc, getDocs, collection, query, where } from "firebase/firesto
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 
 const registerSchema = z.object({
     name: z.string().min(1, "Name is required").max(50, "Name is too long"),
@@ -195,10 +196,10 @@ export default function RegisterPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                    title="Toggle show password"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 dark:hover:text-[#38BDF8] transition-colors p-1"
+                                    title={showPassword ? "Hide password" : "Show password"}
                                 >
-                                    👁
+                                    {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                                 </button>
                             </div>
                             {errors.password ? (
@@ -220,10 +221,10 @@ export default function RegisterPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirm(!showConfirm)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                    title="Toggle show confirm password"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-500 dark:hover:text-[#38BDF8] transition-colors p-1"
+                                    title={showConfirm ? "Hide password" : "Show password"}
                                 >
-                                    👁
+                                    {showConfirm ? <Eye size={20} /> : <EyeOff size={20} />}
                                 </button>
                             </div>
                             {errors.confirmPassword && <p className="text-red-500 text-xs mt-1.5 font-bold">{errors.confirmPassword.message}</p>}
